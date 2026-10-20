@@ -23,6 +23,14 @@ data class UserEntity(
     val wakeupTime: String = "07:00",
     @ColumnInfo(name = "bed_time")
     val bedTime: String = "23:00",
+    @ColumnInfo(name = "breakfast_enabled", defaultValue = "1")
+    val breakfastEnabled: Boolean = true,
+    @ColumnInfo(name = "lunch_enabled", defaultValue = "1")
+    val lunchEnabled: Boolean = true,
+    @ColumnInfo(name = "dinner_enabled", defaultValue = "1")
+    val dinnerEnabled: Boolean = true,
+    @ColumnInfo(name = "toilet_enabled", defaultValue = "1")
+    val toiletEnabled: Boolean = true,
     @ColumnInfo(name = "created_at")
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")

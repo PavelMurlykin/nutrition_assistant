@@ -6,9 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.pamurlykin.nutritionassistant.data.local.UserEntity
-import com.pamurlykin.nutritionassistant.data.model.ScheduleSlot
 import com.pamurlykin.nutritionassistant.util.StorageFormats
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -21,6 +19,9 @@ class NotificationScheduler(
 
     fun scheduleAll(user: UserEntity) {
         createNotificationChannel()
+        // Version 1 also scheduled sleep quality with request code 4.
+        alarmManager.cancel(PendingIntent.getBroadcast(context, (user.userId * 100 + 4).toInt(),
+            Intent(context, ReminderReceiver::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
         ReminderType.entries.forEach { reminderType ->
             schedule(user, reminderType)
         }
@@ -38,37 +39,27 @@ class NotificationScheduler(
     }
 
     fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return
-        }
-
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Напоминания Nutrition Assistant",
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Напоминания о еде, воде, сне и дневной статистике."
+            description = "Напоминания о завтраке, обеде, ужине и туалете."
         }
         manager.createNotificationChannel(channel)
     }
 
-    private fun schedule(user: UserEntity, reminderType: ReminderType) {
-        val reminderTime = when (reminderType.scheduleSlot) {
-            ScheduleSlot.BREAKFAST -> user.breakfastTime
-            ScheduleSlot.LUNCH -> user.lunchTime
-            ScheduleSlot.DINNER -> user.dinnerTime
-            ScheduleSlot.TOILET -> user.toiletTime
-            ScheduleSlot.WAKEUP,
-            ScheduleSlot.BED,
-            null -> StorageFormats.plusMinutes(user.wakeupTime, 30)
+    fun schedule(user: UserEntity, reminderType: ReminderType) {
+        if (!reminderType.scheduleSlot.enabled(user)) {
+            alarmManager.cancel(createPendingIntent(user.userId, reminderType))
+            return
         }
-
+        val reminderTime = reminderType.scheduleSlot.time(user)
         val firstTriggerAt = nextTriggerMillis(reminderTime)
-        alarmManager.setInexactRepeating(
+        alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             firstTriggerAt,
-            AlarmManager.INTERVAL_DAY,
             createPendingIntent(user.userId, reminderType),
         )
     }

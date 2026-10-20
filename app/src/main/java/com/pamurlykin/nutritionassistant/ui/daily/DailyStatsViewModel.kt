@@ -1,175 +1,92 @@
 package com.pamurlykin.nutritionassistant.ui.daily
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import com.pamurlykin.nutritionassistant.data.model.DailyStatsSnapshot
-import com.pamurlykin.nutritionassistant.data.model.LocalUserDefaults
-import com.pamurlykin.nutritionassistant.data.model.MealType
+import androidx.lifecycle.*
+import com.pamurlykin.nutritionassistant.data.local.CatalogEntryEntity
+import com.pamurlykin.nutritionassistant.data.model.*
 import com.pamurlykin.nutritionassistant.data.repository.NutritionRepository
-import com.pamurlykin.nutritionassistant.util.StorageFormats
 import java.time.LocalDate
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
-data class DailyStatsUiState(
-    val selectedDate: LocalDate = LocalDate.now(),
-    val snapshot: DailyStatsSnapshot? = null,
-)
+data class DailyStatsUiState(val selectedDate: LocalDate = LocalDate.now(), val snapshot: DailyStatsSnapshot? = null)
 
-class DailyStatsViewModel(
-    private val repository: NutritionRepository,
-) : ViewModel() {
+class DailyStatsViewModel(private val repository: NutritionRepository) : ViewModel() {
     private val selectedDate = MutableStateFlow(LocalDate.now())
+    val error = MutableStateFlow<String?>(null)
+    val busy = MutableStateFlow(false)
+    val catalog = repository.observeCatalog().catch { error.value = it.message ?: "Не удалось открыть справочник." }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<DailyStatsUiState> = selectedDate
-        .flatMapLatest { date ->
-            val storageDate = StorageFormats.formatDateForStorage(date)
-            repository.observeDailyStats(LocalUserDefaults.USER_ID, storageDate)
-                .map { snapshot ->
-                    DailyStatsUiState(
-                        selectedDate = date,
-                        snapshot = snapshot,
-                    )
-                }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = DailyStatsUiState(),
-        )
+    val uiState = selectedDate.flatMapLatest { date ->
+        repository.observeDailyStats(LocalUserDefaults.USER_ID, date.toString())
+            .map { DailyStatsUiState(date, it) }
+            .onStart { emit(DailyStatsUiState(date)) }
+            .catch { error.value = it.message ?: "Не удалось открыть дневник." }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DailyStatsUiState())
 
-    init {
+    fun setDate(date: LocalDate) { selectedDate.value = date }
+    private fun perform(onSuccess: () -> Unit = {}, action: suspend () -> Unit) {
+        if (busy.value) return
+        busy.value = true
         viewModelScope.launch {
-            repository.ensureUser(LocalUserDefaults.USER_ID)
-            repository.ensureSleepForDay(
-                userId = LocalUserDefaults.USER_ID,
-                date = currentDate(),
-            )
+            try { action(); onSuccess() }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { error.value = failure.message ?: "Не удалось сохранить запись." }
+            finally { busy.value = false }
         }
     }
-
-    fun setDate(date: LocalDate) {
-        selectedDate.value = date
-        viewModelScope.launch {
-            repository.ensureSleepForDay(
-                userId = LocalUserDefaults.USER_ID,
-                date = StorageFormats.formatDateForStorage(date),
-            )
+    fun saveCatalog(id: Long?, kind: String, name: String, type: String, ingredients: List<String>, onSuccess: (CatalogEntryEntity) -> Unit) {
+        var result: CatalogEntryEntity? = null
+        perform({ onSuccess(requireNotNull(result)) }) { result = repository.saveCatalogEntry(id, kind, name, type, ingredients) }
+    }
+    fun archiveCatalog(id: Long) = perform { repository.archiveCatalogEntry(id) }
+    fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) { repository.saveMeal(date, type, id, ids) }
+    }
+    fun saveMedicines(id: Long?, selections: List<MedicineSelection>, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) { repository.saveMedicines(date, id, selections) }
+    }
+    fun deleteMeal(id: Long) = perform { repository.deleteMeal(LocalUserDefaults.USER_ID, id) }
+    fun deleteMedicine(id: Long) = perform { repository.deleteMedicine(LocalUserDefaults.USER_ID, id) }
+    fun saveStool(id: Long?, quality: Int, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) {
+            if (id == null) repository.addStool(LocalUserDefaults.USER_ID, date, quality)
+            else repository.updateStool(LocalUserDefaults.USER_ID, id, quality)
         }
     }
-
-    fun upsertMeal(mealType: MealType, description: String) {
-        viewModelScope.launch {
-            repository.upsertMeal(LocalUserDefaults.USER_ID, currentDate(), mealType, description)
+    fun deleteStool(id: Long) = perform { repository.deleteStool(LocalUserDefaults.USER_ID, id) }
+    fun saveFeeling(id: Long?, text: String, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) {
+            if (id == null) repository.addFeeling(LocalUserDefaults.USER_ID, date, text)
+            else repository.updateFeeling(LocalUserDefaults.USER_ID, id, text)
         }
     }
-
-    fun updateMeal(mealId: Long, description: String) {
-        viewModelScope.launch {
-            repository.updateMeal(LocalUserDefaults.USER_ID, mealId, description)
-        }
+    fun deleteFeeling(id: Long) = perform { repository.deleteFeeling(LocalUserDefaults.USER_ID, id) }
+    fun setWater(count: Int, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) { repository.setWaterForDay(LocalUserDefaults.USER_ID, date, count) }
     }
-
-    fun deleteMeal(mealId: Long) {
-        viewModelScope.launch {
-            repository.deleteMeal(LocalUserDefaults.USER_ID, mealId)
-        }
-    }
-
-    fun addMedicine(name: String, dosage: String?) {
-        viewModelScope.launch {
-            repository.addMedicine(LocalUserDefaults.USER_ID, currentDate(), name, dosage)
-        }
-    }
-
-    fun updateMedicine(medicineId: Long, name: String, dosage: String?) {
-        viewModelScope.launch {
-            repository.updateMedicine(LocalUserDefaults.USER_ID, medicineId, name, dosage)
-        }
-    }
-
-    fun deleteMedicine(medicineId: Long) {
-        viewModelScope.launch {
-            repository.deleteMedicine(LocalUserDefaults.USER_ID, medicineId)
-        }
-    }
-
-    fun addStool(quality: Int) {
-        viewModelScope.launch {
-            repository.addStool(LocalUserDefaults.USER_ID, currentDate(), quality)
-        }
-    }
-
-    fun updateStool(stoolId: Long, quality: Int) {
-        viewModelScope.launch {
-            repository.updateStool(LocalUserDefaults.USER_ID, stoolId, quality)
-        }
-    }
-
-    fun deleteStool(stoolId: Long) {
-        viewModelScope.launch {
-            repository.deleteStool(LocalUserDefaults.USER_ID, stoolId)
-        }
-    }
-
-    fun addFeeling(description: String) {
-        viewModelScope.launch {
-            repository.addFeeling(LocalUserDefaults.USER_ID, currentDate(), description)
-        }
-    }
-
-    fun updateFeeling(feelingId: Long, description: String) {
-        viewModelScope.launch {
-            repository.updateFeeling(LocalUserDefaults.USER_ID, feelingId, description)
-        }
-    }
-
-    fun deleteFeeling(feelingId: Long) {
-        viewModelScope.launch {
-            repository.deleteFeeling(LocalUserDefaults.USER_ID, feelingId)
-        }
-    }
-
-    fun setWater(value: Int) {
-        viewModelScope.launch {
-            repository.setWaterForDay(LocalUserDefaults.USER_ID, currentDate(), value)
-        }
-    }
-
     fun incrementWater(delta: Int) {
-        viewModelScope.launch {
-            repository.incrementWater(LocalUserDefaults.USER_ID, currentDate(), delta)
-        }
+        val date = selectedDate.value.toString()
+        perform { repository.incrementWater(LocalUserDefaults.USER_ID, date, delta) }
     }
-
-    fun upsertSleep(wakeupTime: String, bedTime: String, qualityDescription: String?) {
-        viewModelScope.launch {
-            repository.upsertSleep(
-                userId = LocalUserDefaults.USER_ID,
-                date = currentDate(),
-                wakeupTime = wakeupTime,
-                bedTime = bedTime,
-                qualityDescription = qualityDescription,
-            )
-        }
+    fun saveSleep(wakeup: String, bed: String, quality: String?, onSuccess: () -> Unit) {
+        val date = selectedDate.value.toString()
+        perform(onSuccess) { repository.upsertSleep(LocalUserDefaults.USER_ID, date, wakeup, bed, quality) }
     }
-
-    private fun currentDate(): String = StorageFormats.formatDateForStorage(selectedDate.value)
-
+    fun deleteSleep() {
+        val date = selectedDate.value.toString()
+        perform { repository.deleteSleep(LocalUserDefaults.USER_ID, date) }
+    }
     companion object {
-        fun factory(repository: NutritionRepository): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    DailyStatsViewModel(repository) as T
-            }
+        fun factory(repository: NutritionRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = DailyStatsViewModel(repository) as T
+        }
     }
 }

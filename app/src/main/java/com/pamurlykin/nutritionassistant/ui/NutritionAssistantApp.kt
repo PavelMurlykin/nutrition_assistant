@@ -1,9 +1,5 @@
 package com.pamurlykin.nutritionassistant.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -11,12 +7,14 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -24,8 +22,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pamurlykin.nutritionassistant.AppContainer
-import com.pamurlykin.nutritionassistant.notification.BuildCompat
 import com.pamurlykin.nutritionassistant.ui.daily.DailyStatsScreen
+import com.pamurlykin.nutritionassistant.ui.catalog.CatalogScreen
 import com.pamurlykin.nutritionassistant.ui.daily.DailyStatsViewModel
 import com.pamurlykin.nutritionassistant.ui.navigation.TopLevelDestination
 import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleScreen
@@ -35,12 +33,7 @@ import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleViewModel
 fun NutritionAssistantApp(
     container: AppContainer,
 ) {
-    val context = LocalContext.current
     val navController = rememberNavController()
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = {},
-    )
 
     val scheduleViewModel: ScheduleViewModel = viewModel(
         factory = ScheduleViewModel.factory(
@@ -52,20 +45,15 @@ fun NutritionAssistantApp(
         factory = DailyStatsViewModel.factory(repository = container.repository),
     )
 
-    LaunchedEffect(Unit) {
-        if (
-            BuildCompat.requiresNotificationPermission() &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
+    val error by dailyStatsViewModel.error.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(error) {
+        error?.let { snackbar.showSnackbar(it); dailyStatsViewModel.error.value = null }
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -91,7 +79,7 @@ fun NutritionAssistantApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = TopLevelDestination.SCHEDULE.route,
+            startDestination = TopLevelDestination.DAILY_STATS.route,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(TopLevelDestination.SCHEDULE.route) {
@@ -99,6 +87,9 @@ fun NutritionAssistantApp(
             }
             composable(TopLevelDestination.DAILY_STATS.route) {
                 DailyStatsScreen(viewModel = dailyStatsViewModel)
+            }
+            composable(TopLevelDestination.CATALOG.route) {
+                CatalogScreen(viewModel = dailyStatsViewModel)
             }
         }
     }

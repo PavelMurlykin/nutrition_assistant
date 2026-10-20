@@ -17,6 +17,6 @@ fun validateTime(value: String): String {
 }
 
 fun validateStoolQuality(value: Int): Int {
-    require(value in 0..7) { "Оценка стула должна быть в диапазоне от 0 до 7." }
+    require(value in 1..7) { "Тип стула должен быть в диапазоне от 1 до 7." }
     return value
 }

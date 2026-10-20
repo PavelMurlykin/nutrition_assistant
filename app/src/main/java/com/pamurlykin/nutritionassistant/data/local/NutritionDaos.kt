@@ -27,6 +27,8 @@ interface UserDao {
 
 @Dao
 interface MealDao {
+    @Query("SELECT * FROM meals WHERE id NOT IN (SELECT meal_id FROM meal_items)")
+    suspend fun withoutItems(): List<MealEntity>
     @Insert
     suspend fun insert(meal: MealEntity): Long
 
@@ -57,6 +59,8 @@ interface MealDao {
 
 @Dao
 interface MedicineDao {
+    @Query("SELECT * FROM medicines WHERE id NOT IN (SELECT medicine_id FROM medicine_items)")
+    suspend fun withoutItems(): List<MedicineEntity>
     @Insert
     suspend fun insert(medicine: MedicineEntity): Long
 
@@ -75,6 +79,8 @@ interface MedicineDao {
 
 @Dao
 interface StoolDao {
+    @Query("SELECT * FROM stools WHERE user_id = :userId ORDER BY date, id")
+    fun observeAll(userId: Long): Flow<List<StoolEntity>>
     @Insert
     suspend fun insert(stool: StoolEntity): Long
 
@@ -123,6 +129,8 @@ interface WaterDao {
 
 @Dao
 interface SleepDao {
+    @Query("DELETE FROM sleeps WHERE user_id = :userId AND date = :date")
+    suspend fun deleteForDay(userId: Long, date: String)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(sleep: SleepEntity): Long
 
