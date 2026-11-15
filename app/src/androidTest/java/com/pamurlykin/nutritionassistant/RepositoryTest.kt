@@ -82,4 +82,27 @@ class RepositoryTest {
         assertFalse(repository.getUser().toiletEnabled)
         assertTrue(repository.getUser().breakfastEnabled)
     }
+
+    @Test fun calendarCountsIntakesRatherThanItemsAndUpdatesAfterDeletion() = runBlocking {
+        val day = "2026-11-15"
+        val dishes = repository.observeCatalog().first().filter { it.kind == CatalogKind.DISH }.take(2)
+        val medicine = repository.saveCatalogEntry(null, CatalogKind.MEDICINE, "Календарный тест", "", emptyList())
+        repository.saveMeal(day, MealType.BREAKFAST, null, dishes.map { it.id })
+        repository.saveMeal(day, MealType.SNACK, null, listOf(dishes.first().id))
+        repository.saveMeal("2026-10-31", MealType.SNACK, null, listOf(dishes.first().id))
+        repository.saveMedicines(day, null, listOf(MedicineSelection(medicine.id, "1")))
+        repository.addStool(1, day, 4)
+        repository.addStool(1, day, 6)
+        repository.addStool(1, "2026-11-16", 3)
+        val counts = repository.observeCalendarCounts(day, day).first().single()
+        assertEquals(CalendarDayCounts(day, 2, 1, 2), counts)
+        assertEquals(3, repository.observeCalendarCounts("2026-10-31", "2026-11-16").first().size)
+
+        val snapshot = repository.observeDailyStats(1, day).first()
+        snapshot.meals.forEach { repository.deleteMeal(1, it.event.id) }
+        assertEquals(CalendarDayCounts(day, 0, 1, 2), repository.observeCalendarCounts(day, day).first().single())
+        snapshot.medicines.forEach { repository.deleteMedicine(1, it.event.id) }
+        snapshot.stools.forEach { repository.deleteStool(1, it.id) }
+        assertTrue(repository.observeCalendarCounts(day, day).first().isEmpty())
+    }
 }

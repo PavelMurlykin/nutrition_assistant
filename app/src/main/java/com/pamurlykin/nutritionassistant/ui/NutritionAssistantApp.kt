@@ -70,7 +70,7 @@ fun NutritionAssistantApp(
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
+                        icon = { Icon(destination.icon, contentDescription = null) },
                         label = { Text(destination.label) },
                     )
                 }
@@ -79,13 +79,13 @@ fun NutritionAssistantApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = TopLevelDestination.DAILY_STATS.route,
+            startDestination = TopLevelDestination.CALENDAR.route,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(TopLevelDestination.SCHEDULE.route) {
                 ScheduleScreen(viewModel = scheduleViewModel)
             }
-            composable(TopLevelDestination.DAILY_STATS.route) {
+            composable(TopLevelDestination.CALENDAR.route) {
                 DailyStatsScreen(viewModel = dailyStatsViewModel)
             }
             composable(TopLevelDestination.CATALOG.route) {

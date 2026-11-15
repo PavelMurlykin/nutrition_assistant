@@ -23,7 +23,10 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
     var entry by remember { mutableStateOf<CatalogEntryEntity?>(null) }
     val visible = entries.filter { it.kind == kind && (kind == CatalogKind.MEDICINE || it.foodType == type || it.foodType == "unknown") && catalogMatches(it, query) }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Справочники", style = MaterialTheme.typography.headlineLarge) }
+        item {
+            Text("Меню", style = MaterialTheme.typography.headlineMedium)
+            Text("Справочники блюд и лекарств", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = kind == CatalogKind.DISH, onClick = { kind = CatalogKind.DISH }, label = { Text("Блюда") })

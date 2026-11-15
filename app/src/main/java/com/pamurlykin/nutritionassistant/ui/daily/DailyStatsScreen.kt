@@ -22,17 +22,22 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val entries by viewModel.catalog.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val calendar by viewModel.calendar.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var dialog by remember { mutableStateOf<DailyDialog?>(null) }
     LaunchedEffect(state.selectedDate) { dialog = null }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { viewModel.refreshToday() }
     val snapshot = state.snapshot
-    LazyColumn(modifier = Modifier.testTag("daily-list"), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { Text("Дневник", style = MaterialTheme.typography.headlineLarge) }
-        item {
+    CalendarDayLayout(calendar, state.selectedDate, busy, viewModel::previousMonth, viewModel::nextMonth,
+        viewModel::setDate, viewModel::goToToday, { if (snapshot != null) dialog = DailyDialog.Choice }) {
+        item(key = "day-heading") {
             NutritionCard {
                 Text(StorageFormats.formatDateForDisplay(state.selectedDate), style = MaterialTheme.typography.titleLarge)
                 TextButton(enabled = !busy, onClick = { showDatePicker(context, state.selectedDate, viewModel::setDate) }) { Text("Выбрать дату") }
-                Text("Все события добавляются вручную. Изменения сохраняются на устройстве.")
+                if (snapshot != null) {
+                    Text("Приемов пищи: ${snapshot.meals.size} · Лекарств: ${snapshot.medicines.size} · Туалет: ${snapshot.stools.size}",
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
         if (snapshot == null) item { CircularProgressIndicator() }
@@ -64,7 +69,7 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                 }
             }
             item {
-                NutritionCard {
+                NutritionCard(modifier = Modifier.testTag("stool-card")) {
                     CardHeadline("Туалет")
                     snapshot.stools.forEach { entry ->
                         Text(StoolCondition.label(entry.quality))
@@ -113,6 +118,19 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
     }
     val dismiss = { dialog = null }
     when (val current = dialog) {
+        DailyDialog.Choice -> AlertDialog(onDismissRequest = dismiss,
+            title = { Text("Добавить запись") },
+            text = { Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                MealType.entries.forEach { type ->
+                    val existing = if (type.isPrimary) snapshot?.meals?.firstOrNull { it.event.mealType == type.storageValue } else null
+                    TextButton(onClick = { dialog = DailyDialog.Meal(type, existing) }) {
+                        Text(type.title + if (existing != null) " · изменить" else "")
+                    }
+                }
+                TextButton(onClick = { dialog = DailyDialog.Medicine(null) }) { Text("Прием лекарств") }
+                TextButton(onClick = { dialog = DailyDialog.Stool(null) }) { Text("Туалет") }
+            } },
+            confirmButton = { TextButton(onClick = dismiss) { Text("Отмена") } })
         is DailyDialog.Meal -> CatalogEventDialog(
             title = current.type.title, kind = CatalogKind.DISH,
             initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, it.foodType, it.ingredients) }.orEmpty(),
@@ -205,6 +223,7 @@ private fun SleepDialog(initial: SleepEntity?, busy: Boolean, onDismiss: () -> U
 }
 
 private sealed interface DailyDialog {
+    data object Choice : DailyDialog
     data class Meal(val type: MealType, val event: MealWithItems?) : DailyDialog
     data class Medicine(val event: MedicineWithItems?) : DailyDialog
     data class Stool(val entry: StoolEntity?) : DailyDialog

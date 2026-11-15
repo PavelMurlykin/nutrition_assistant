@@ -99,6 +99,11 @@ class NutritionRepository(private val database: NutritionDatabase) {
 
     suspend fun archiveCatalogEntry(id: Long) = catalog.archive(id)
 
+    fun observeCalendarCounts(start: String, end: String): Flow<List<CalendarDayCounts>> = flow {
+        initialize()
+        emitAll(catalog.observeCalendarCounts(LocalUserDefaults.USER_ID, start, end))
+    }
+
     suspend fun updateScheduleSlot(userId: Long, slot: ScheduleSlot, time: String) = database.withTransaction {
         val user = getUser(userId)
         val value = validateTime(time)

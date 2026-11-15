@@ -8,13 +8,13 @@ The app supports Android 8.0 and later. Open the project in Android Studio with 
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 8.9 is included. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
+Gradle Wrapper 8.13 is included. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
 
 ### Selecting Java for Gradle
 
 In Android Studio, open **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** and select an installed JDK 21 (JDK 17 also works with this project). When `GRADLE_LOCAL_JAVA_HOME` is selected, the `java.home` property in the local `.gradle/config.properties` file supplies the path. This machine-specific file is excluded from Git. After changing it, run **Sync Project with Gradle Files**.
 
-Java 25 bundled with a newer Android Studio is incompatible with Gradle 8.9. `Incompatible Gradle JVM version` and `Unsupported class file major version 69` mean that a compatible build JDK must be selected. The Java runtime used to launch Android Studio itself is configured separately. For terminal builds, set `JAVA_HOME`; the wrapper does not automatically read `.gradle/config.properties`. Example for the JDK installed on this computer:
+Java 25 bundled with a newer Android Studio is incompatible with Gradle 8.13. `Incompatible Gradle JVM version` and `Unsupported class file major version 69` mean that a compatible build JDK must be selected. The Java runtime used to launch Android Studio itself is configured separately. For terminal builds, set `JAVA_HOME`; the wrapper does not automatically read `.gradle/config.properties`. Example for the JDK installed on this computer:
 
 ```powershell
 $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'
@@ -24,11 +24,15 @@ $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'
 
 Use your own installation path on another computer. `--version` should report a compatible JVM. [Configuring the Gradle JDK in Android Studio](https://developer.android.com/build/jdks).
 
-The app opens today's diary. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Cloud backup is disabled. Import, export, and synchronization are unavailable; uninstalling the app deletes its data.
+The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, and «Меню» (Menu), the former food and medication catalogs. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Cloud backup is disabled. Import, export, and synchronization are unavailable; uninstalling the app deletes its data.
 
-## Diary
+## Calendar and diary
 
-Tap «Выбрать дату» (Select date) to choose a calendar day. Each section supports adding, editing, and deleting records. Merely viewing a date does not create a sleep record.
+The calendar displays six Monday-first weeks, including adjacent months. Arrows and horizontal swipes browse months; switching selects the first day of the new month, as in sports_activity_assistant. Tap a day to open its records; tapping an adjacent month's day also changes the visible month. «Сегодня» (Today) returns to the current date. «Выбрать дату» (Select date) below the calendar opens the system date picker. Today has an outline and the selected day is highlighted. The selected date and visible month survive screen recreation and tab changes.
+
+Food, medication, and toilet icons mark days with saved events. The diary heading shows counts of meals, medication intakes, and toilet visits for the selected day. Multiple dishes in one meal or medicines in one intake count as one event. Edits and deletions update the calendar automatically; an empty day is never assumed symptom-free.
+
+Scrolling the diary up collapses the calendar; returning to the top expands it. Vertical gestures over the calendar also scroll the diary. On short screens or with large system fonts, the calendar scrolls with the diary. «+» opens a choice of breakfast, lunch, dinner, snack, medication intake, or toilet entry. If a primary meal already exists, it opens for editing. Other sections remain available further down the diary. Each section supports adding, editing, and deleting records. Merely viewing a date does not create records.
 
 Breakfast, lunch, and dinner each have one daily record containing multiple dishes. Multiple snacks and medication intakes are supported, as are multiple stool and wellbeing entries. Sleep and water count each have one record per day.
 
@@ -63,9 +67,9 @@ An association does not establish a cause. “Without exposure” means the fact
 
 Enter sleep manually: bedtime on the preceding evening, wake time on the selected day, and a free-text sleep-quality description. The initial 23:00 and 07:00 values are form defaults only; nothing is recorded until saved. Wellbeing uses free text. Water supports −1, +1, and an exact glass count; negative values are disallowed.
 
-## Catalogs
+## Menu: catalogs
 
-Open «Справочники» (Catalogs). Food has three sections by source, prefilled with typical examples. Homemade examples include a basic ingredient list: adjust it to your recipe before logging food. Enter one ingredient per line; commas and semicolons are also accepted. Known ingredients can optionally be provided for restaurant and store-bought dishes.
+Open «Меню» (Menu), formerly «Справочники» (Catalogs). Food has three sections by source, prefilled with typical examples. Homemade examples include a basic ingredient list: adjust it to your recipe before logging food. Enter one ingredient per line; commas and semicolons are also accepted. Known ingredients can optionally be provided for restaurant and store-bought dishes.
 
 Search, add, rename, change food type and ingredients, or remove entries from the catalog. Removal hides an entry from new events while preserving history. Creating the same name in the same type restores a hidden entry. Identical names are allowed across different food types; duplicates within a type are prevented. Creating an exact match selects the existing entry with its existing ingredients. Names and individual ingredients are limited to 1000 characters.
 
@@ -92,4 +96,4 @@ Install an update over the previous app using the same signing key. Room migrati
 ./gradlew.bat :app:connectedDebugAndroidTest
 ```
 
-The second command needs a test emulator or device. Tests cover analysis and search, multi-item events and individual doses, historical snapshots, migration, and creating a dish through the interface.
+The second command needs a dedicated test emulator or device: the test runner may reinstall the app. Tests cover analysis and search, multi-item events and individual doses, historical snapshots, migration, creating a dish through the interface, the calendar grid, event counts, navigation, and selected-date restoration.

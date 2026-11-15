@@ -2,6 +2,7 @@ package com.pamurlykin.nutritionassistant.data.local
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import com.pamurlykin.nutritionassistant.data.model.CalendarDayCounts
 import org.json.JSONArray
 
 class IngredientConverters {
@@ -13,6 +14,21 @@ class IngredientConverters {
 
 @Dao
 interface CatalogDao {
+    @Query("""
+        SELECT date, SUM(meals) AS meals, SUM(medicines) AS medicines, SUM(stools) AS stools
+        FROM (
+            SELECT date, COUNT(*) AS meals, 0 AS medicines, 0 AS stools FROM meals
+            WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
+            UNION ALL
+            SELECT date, 0 AS meals, COUNT(*) AS medicines, 0 AS stools FROM medicines
+            WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
+            UNION ALL
+            SELECT date, 0 AS meals, 0 AS medicines, COUNT(*) AS stools FROM stools
+            WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
+        ) GROUP BY date ORDER BY date
+    """)
+    fun observeCalendarCounts(userId: Long, start: String, end: String): Flow<List<CalendarDayCounts>>
+
     @Query("SELECT COUNT(*) FROM catalog") suspend fun count(): Int
     @Query("SELECT * FROM catalog WHERE archived = 0 ORDER BY name")
     fun observeEntries(): Flow<List<CatalogEntryEntity>>

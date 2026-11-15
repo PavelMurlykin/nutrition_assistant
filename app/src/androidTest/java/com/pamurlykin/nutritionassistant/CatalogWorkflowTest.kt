@@ -13,7 +13,7 @@ class CatalogWorkflowTest {
 
     @Test fun createMissingDishSelectSecondBySubstringAndKeepMealAfterRecreation() {
         val name = "Автотест суп " + System.currentTimeMillis()
-        compose.waitUntil(15_000) { compose.onAllNodesWithText("Добавить").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("daily-list").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-snack"))
         compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack"))).performClick()
         compose.onNodeWithText("Поиск по части названия").performTextInput(name)

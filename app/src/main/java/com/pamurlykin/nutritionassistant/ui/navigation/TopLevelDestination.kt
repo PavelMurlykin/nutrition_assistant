@@ -3,7 +3,7 @@ package com.pamurlykin.nutritionassistant.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class TopLevelDestination(
@@ -12,6 +12,6 @@ enum class TopLevelDestination(
     val icon: ImageVector,
 ) {
     SCHEDULE("schedule", "Расписание", Icons.Rounded.Alarm),
-    DAILY_STATS("daily_stats", "Статистика", Icons.Rounded.CalendarMonth),
-    CATALOG("catalog", "Справочники", Icons.AutoMirrored.Rounded.MenuBook),
+    CALENDAR("daily_stats", "Календарь", Icons.Rounded.CalendarMonth),
+    CATALOG("catalog", "Меню", Icons.Rounded.Menu),
 }

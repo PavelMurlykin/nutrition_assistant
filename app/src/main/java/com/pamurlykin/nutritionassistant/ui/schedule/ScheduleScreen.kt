@@ -32,8 +32,8 @@ fun ScheduleScreen(viewModel: ScheduleViewModel) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { allowed = NotificationManagerCompat.from(context).areNotificationsEnabled() }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Text("Расписание", style = MaterialTheme.typography.headlineLarge)
-            Text("Остальные события добавляются вручную.")
+            Text("Расписание", style = MaterialTheme.typography.headlineMedium)
+            Text("Время ежедневных напоминаний", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (error != null) item { Text(error.orEmpty(), color = MaterialTheme.colorScheme.error) }
         item {
