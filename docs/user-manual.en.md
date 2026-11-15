@@ -69,7 +69,7 @@ Enter sleep manually: bedtime on the preceding evening, wake time on the selecte
 
 ## Menu: catalogs
 
-Open «Меню» (Menu), formerly «Справочники» (Catalogs). Food has three sections by source, prefilled with typical examples. Homemade examples include a basic ingredient list: adjust it to your recipe before logging food. Enter one ingredient per line; commas and semicolons are also accepted. Known ingredients can optionally be provided for restaurant and store-bought dishes.
+Open «Меню» (Menu), marked with a fork and knife icon, formerly «Справочники» (Catalogs). Food has three sections by source, prefilled with typical examples. Homemade examples include a basic ingredient list: adjust it to your recipe before logging food. Enter one ingredient per line; commas and semicolons are also accepted. Known ingredients can optionally be provided for restaurant and store-bought dishes.
 
 Search, add, rename, change food type and ingredients, or remove entries from the catalog. Removal hides an entry from new events while preserving history. Creating the same name in the same type restores a hidden entry. Identical names are allowed across different food types; duplicates within a type are prevented. Creating an exact match selects the existing entry with its existing ingredients. Names and individual ingredients are limited to 1000 characters.
 
