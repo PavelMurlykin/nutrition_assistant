@@ -1,21 +1,11 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#1E78FF"
-        android:pathData="M54,18c-14.9,0 -27,12.1 -27,27c0,14.9 12.1,27 27,27s27,-12.1 27,-27c0,-14.9 -12.1,-27 -27,-27z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,45c0,-11 8.7,-19 20,-19s20,8 20,19v2c0,3.3 -2.7,6 -6,6H40c-3.3,0 -6,-2.7 -6,-6z" />
-    <path
-        android:fillColor="#0F2147"
-        android:pathData="M47,60h14c2.2,0 4,1.8 4,4v10H43V64c0,-2.2 1.8,-4 4,-4z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M56,32c6.6,0 12,5.4 12,12H44c0,-6.6 5.4,-12 12,-12z" />
-    <path
-        android:fillColor="#25B56A"
-        android:pathData="M64,18c9,1.6 15.5,9.4 15.5,18.8c-8.9,-1.7 -15.5,-9.4 -15.5,-18.8z" />
-</vector>
+<!-- Keep the selected artwork intact and inside Android's adaptive-icon safe area. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="18dp"
+    android:insetTop="18dp"
+    android:insetRight="18dp"
+    android:insetBottom="18dp">
+    <bitmap
+        android:src="@drawable/ic_launcher_artwork"
+        android:gravity="fill"
+        android:filter="true" />
+</inset>

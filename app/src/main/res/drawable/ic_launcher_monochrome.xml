@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Calendar silhouette with transparent header and plate for themed launchers. -->
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M39,33H69C74.5,33 79,37.5 79,43V70C79,75.5 74.5,80 69,80H39C33.5,80 29,75.5 29,70V43C29,37.5 33.5,33 39,33ZM39,35.5C34.9,35.5 31.5,38.9 31.5,43V45H76.5V43C76.5,38.9 73.1,35.5 69,35.5ZM54,47A15,15 0,1 0,54 77A15,15 0,1 0,54 47Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M44,28C45.7,28 47,29.3 47,31V37C47,38.7 45.7,40 44,40C42.3,40 41,38.7 41,37V31C41,29.3 42.3,28 44,28ZM65,28C66.7,28 68,29.3 68,31V37C68,38.7 66.7,40 65,40C63.3,40 62,38.7 62,37V31C62,29.3 63.3,28 65,28Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M45,52Q46,52 46,53V58Q46,59 46.5,59Q47,59 47,58V53Q47,52 48,52Q49,52 49,53V58Q49,59 49.5,59Q50,59 50,58V53Q50,52 51,52Q52,52 52,53V59Q52,61 50,62L50.5,70Q50.5,72 48.5,72Q46.5,72 46.5,70L47,62Q44,61 44,59V53Q44,52 45,52Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M60,52C57.5,52 55.5,56 55.5,58C55.5,60 56.5,61 58,62L57.5,70Q57.5,72 59.5,72Q61.5,72 61.5,70L61,62C63,61 64,60 64,58C64,56 62.5,52 60,52Z" />
+</vector>

@@ -2,6 +2,8 @@
 
 ## Installation and launch
 
+The app icon is the green “Food calendar” with a plate, fork, and spoon. It adapts to circular and other Android icon shapes. On Android 13+, a monochrome version is available for launchers with themed icons enabled.
+
 The app supports Android 8.0 and later. Open the project in Android Studio with JDK 17 or 21 and Android SDK Platform 35, or build the APK:
 
 ```powershell
