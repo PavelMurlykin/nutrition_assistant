@@ -1,7 +1,7 @@
 package com.pamurlykin.nutritionassistant.ui.daily
 
 import androidx.lifecycle.*
-import com.pamurlykin.nutritionassistant.data.local.CatalogEntryEntity
+import com.pamurlykin.nutritionassistant.data.local.CatalogItem
 import com.pamurlykin.nutritionassistant.data.model.*
 import com.pamurlykin.nutritionassistant.data.repository.NutritionRepository
 import java.time.LocalDate
@@ -71,9 +71,9 @@ class DailyStatsViewModel(
             finally { busy.value = false }
         }
     }
-    fun saveCatalog(id: Long?, kind: String, name: String, type: String, ingredients: List<String>, onSuccess: (CatalogEntryEntity) -> Unit) {
-        var result: CatalogEntryEntity? = null
-        perform({ onSuccess(requireNotNull(result)) }) { result = repository.saveCatalogEntry(id, kind, name, type, ingredients) }
+    fun saveCatalog(id: Long?, kind: String, name: String, type: String, productIds: List<Long>, onSuccess: (CatalogItem) -> Unit) {
+        var result: CatalogItem? = null
+        perform({ onSuccess(requireNotNull(result)) }) { result = repository.saveCatalogEntry(id, kind, name, type, productIds) }
     }
     fun archiveCatalog(id: Long) = perform { repository.archiveCatalogEntry(id) }
     fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit) {

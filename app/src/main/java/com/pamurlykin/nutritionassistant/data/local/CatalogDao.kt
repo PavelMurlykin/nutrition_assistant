@@ -30,8 +30,15 @@ interface CatalogDao {
     fun observeCalendarCounts(userId: Long, start: String, end: String): Flow<List<CalendarDayCounts>>
 
     @Query("SELECT COUNT(*) FROM catalog") suspend fun count(): Int
-    @Query("SELECT * FROM catalog WHERE archived = 0 ORDER BY name")
-    fun observeEntries(): Flow<List<CatalogEntryEntity>>
+    @Transaction @Query("SELECT * FROM catalog WHERE archived = 0 ORDER BY normalized_name, id")
+    fun observeEntries(): Flow<List<CatalogItem>>
+    @Transaction @Query("SELECT * FROM catalog WHERE id = :id")
+    suspend fun getItem(id: Long): CatalogItem?
+    @Query("SELECT product_id FROM dish_products WHERE dish_id = :id")
+    suspend fun productIds(id: Long): List<Long>
+    @Query("DELETE FROM dish_products WHERE dish_id = :id")
+    suspend fun clearProducts(id: Long)
+    @Insert suspend fun insertProducts(products: List<DishProductEntity>)
     @Query("SELECT * FROM catalog WHERE id = :id")
     suspend fun get(id: Long): CatalogEntryEntity?
     @Query("SELECT * FROM catalog WHERE kind = :kind AND food_type = :foodType AND normalized_name = :name")

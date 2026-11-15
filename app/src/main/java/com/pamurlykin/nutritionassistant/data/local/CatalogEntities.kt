@@ -9,9 +9,35 @@ data class CatalogEntryEntity(
     val name: String,
     @ColumnInfo(name = "normalized_name") val normalizedName: String,
     @ColumnInfo(name = "food_type") val foodType: String = "",
+    // Compatibility column for schema 2; current recipes use dish_products.
     val ingredients: List<String> = emptyList(),
     val archived: Boolean = false,
 )
+
+@Entity(tableName = "dish_products", primaryKeys = ["dish_id", "product_id"], foreignKeys = [
+    ForeignKey(entity = CatalogEntryEntity::class, parentColumns = ["id"], childColumns = ["dish_id"], onDelete = ForeignKey.CASCADE),
+    ForeignKey(entity = CatalogEntryEntity::class, parentColumns = ["id"], childColumns = ["product_id"]),
+], indices = [Index("product_id")])
+data class DishProductEntity(
+    @ColumnInfo(name = "dish_id") val dishId: Long,
+    @ColumnInfo(name = "product_id") val productId: Long,
+)
+
+data class CatalogItem(
+    @Embedded val entry: CatalogEntryEntity,
+    @Relation(parentColumn = "id", entityColumn = "id", associateBy = Junction(
+        value = DishProductEntity::class, parentColumn = "dish_id", entityColumn = "product_id"))
+    val products: List<CatalogEntryEntity>,
+) {
+    val id get() = entry.id
+    val kind get() = entry.kind
+    val name get() = entry.name
+    val normalizedName get() = entry.normalizedName
+    val foodType get() = entry.foodType
+    val archived get() = entry.archived
+    val productIds get() = products.map { it.id }
+    val ingredients get() = products.sortedBy { it.normalizedName }.map { it.name }
+}
 
 @Entity(tableName = "meal_items", foreignKeys = [
     ForeignKey(entity = MealEntity::class, parentColumns = ["id"], childColumns = ["meal_id"], onDelete = ForeignKey.CASCADE),
@@ -24,6 +50,7 @@ data class MealItemEntity(
     val name: String,
     @ColumnInfo(name = "food_type") val foodType: String,
     val ingredients: List<String>,
+    @ColumnInfo(defaultValue = "'dish'") val kind: String = "dish",
 )
 
 @Entity(tableName = "medicine_items", foreignKeys = [

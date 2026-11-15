@@ -23,6 +23,7 @@ class RepositoryTest {
         repository.initialize()
     }
     @After fun close() { database.close() }
+    private suspend fun product(name: String) = repository.saveCatalogEntry(null, CatalogKind.PRODUCT, name, "", emptyList())
 
     @Test fun installedApplicationRequestsOnlyNotificationsAndDisablesBackup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -32,13 +33,13 @@ class RepositoryTest {
     }
 
     @Test fun multiDishEventPreservesCompositionAcrossCatalogEditsAndArchiving() = runBlocking {
-        val home = repository.saveCatalogEntry(null, "dish", "Тестовая каша", "home", listOf("Молоко", "Овсянка"))
-        val store = repository.saveCatalogEntry(null, "dish", "Тестовый йогурт", "store", emptyList())
-        repository.saveMeal("2026-10-17", MealType.BREAKFAST, null, listOf(home.id, store.id))
+        val home = repository.saveCatalogEntry(null, "dish", "Тестовая каша", "home", listOf(product("Молоко").id, product("Овсянка").id))
+        val yogurt = product("Тестовый йогурт")
+        repository.saveMeal("2026-10-17", MealType.BREAKFAST, null, listOf(home.id, yogurt.id))
         val event = repository.observeDailyStats(1, "2026-10-17").first().meals.single()
-        repository.saveCatalogEntry(home.id, "dish", "Новая каша", "home", listOf("Вода"))
-        repository.archiveCatalogEntry(store.id)
-        repository.saveMeal("2026-10-17", MealType.BREAKFAST, event.event.id, listOf(home.id, store.id))
+        repository.saveCatalogEntry(home.id, "dish", "Новая каша", "home", listOf(product("Вода").id))
+        repository.archiveCatalogEntry(yogurt.id)
+        repository.saveMeal("2026-10-17", MealType.BREAKFAST, event.event.id, listOf(home.id, yogurt.id))
         val saved = repository.observeDailyStats(1, "2026-10-17").first()
         assertEquals(2, saved.meals.single().items.size)
         assertEquals(listOf("Молоко", "Овсянка"), saved.meals.single().items.first().ingredients)
@@ -67,8 +68,8 @@ class RepositoryTest {
     }
 
     @Test fun catalogIsIdempotentAndHomeNeedsIngredients() = runBlocking {
-        val first = repository.saveCatalogEntry(null, "dish", "Тест ёж", "home", listOf("Яйцо"))
-        val duplicate = repository.saveCatalogEntry(null, "dish", "ТЕСТ ЕЖ", "home", listOf("Молоко"))
+        val first = repository.saveCatalogEntry(null, "dish", "Тест ёж", "home", listOf(product("Яйцо").id))
+        val duplicate = repository.saveCatalogEntry(null, "dish", "ТЕСТ ЕЖ", "home", listOf(product("Молоко").id))
         assertEquals(first.id, duplicate.id)
         assertEquals(listOf("Яйцо"), duplicate.ingredients)
         repository.initialize()
@@ -81,6 +82,40 @@ class RepositoryTest {
         repository.setReminderEnabled(ScheduleSlot.TOILET, false)
         assertFalse(repository.getUser().toiletEnabled)
         assertTrue(repository.getUser().breakfastEnabled)
+    }
+
+    @Test fun productRenameUpdatesCurrentRecipesButPreservesLoggedComposition() = runBlocking {
+        val milk = product("Тестовое молоко")
+        val recipe = repository.saveCatalogEntry(null, CatalogKind.DISH, "Тестовый напиток", "restaurant", listOf(milk.id))
+        repository.saveMeal("2026-11-15", MealType.SNACK, null, listOf(recipe.id))
+        repository.saveCatalogEntry(milk.id, CatalogKind.PRODUCT, "Новое молоко", "", emptyList())
+        assertEquals(listOf("Новое молоко"), repository.observeCatalog().first().single { it.id == recipe.id }.ingredients)
+        assertEquals(listOf("Тестовое молоко"), repository.observeDailyStats(1, "2026-11-15").first().meals.single().items.single().ingredients)
+        repository.archiveCatalogEntry(milk.id)
+        repository.saveCatalogEntry(recipe.id, CatalogKind.DISH, recipe.name, "restaurant", listOf(milk.id))
+        assertEquals(listOf(milk.id), repository.observeCatalog().first().single { it.id == recipe.id }.productIds)
+        try {
+            repository.saveCatalogEntry(null, CatalogKind.DISH, "Блюдо с удаленным продуктом", "home", listOf(milk.id))
+            fail("An archived product must not be used in a new recipe")
+        } catch (_: IllegalArgumentException) { }
+    }
+
+    @Test fun recipesRequireProductsAndRejectMedicinesAndRemovedCategory() = runBlocking {
+        val medicine = repository.saveCatalogEntry(null, CatalogKind.MEDICINE, "Тестовое лекарство", "", emptyList())
+        for (type in FoodType.entries) {
+            try {
+                repository.saveCatalogEntry(null, CatalogKind.DISH, "Пустое блюдо", type.storageValue, emptyList())
+                fail("Every edited or new recipe requires products")
+            } catch (_: IllegalArgumentException) { }
+        }
+        try {
+            repository.saveCatalogEntry(null, CatalogKind.DISH, "Лекарство в блюде", "home", listOf(medicine.id))
+            fail("Medicine is not a product")
+        } catch (_: IllegalArgumentException) { }
+        try {
+            repository.saveCatalogEntry(null, CatalogKind.DISH, "Старая категория", "store", listOf(product("Вода").id))
+            fail("The removed food category must not be persisted")
+        } catch (_: IllegalArgumentException) { }
     }
 
     @Test fun calendarCountsIntakesRatherThanItemsAndUpdatesAfterDeletion() = runBlocking {

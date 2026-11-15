@@ -47,7 +47,7 @@ class CalendarWorkflowTest {
         compose.onNodeWithText("Время ежедневных напоминаний").assertExists()
         capture("schedule-light")
         compose.onNodeWithText("Меню").performClick()
-        compose.onNodeWithText("Справочники блюд и лекарств").assertExists()
+        compose.onNodeWithText("Справочники блюд, продуктов и лекарств").assertExists()
         capture("menu-light")
         compose.onNodeWithText("Календарь").performClick()
         compose.onNodeWithTag("calendar-day-$selected").assertIsSelected()

@@ -74,4 +74,15 @@ class StoolAnalyzerTest {
     }
 
     @Test(expected = IllegalArgumentException::class) fun newStoolCannotUseLegacyZero() { validateStoolQuality(0) }
+
+    @Test fun directlyLoggedProductAlsoCountsAsIngredientExposure() {
+        val product = meal("2026-11-14", "Молоко").let { event ->
+            event.copy(items = event.items.map { it.copy(kind = CatalogKind.PRODUCT, foodType = "") })
+        }
+        val report = StoolAnalyzer.analyze("2026-11-15", listOf(product), listOf(stool("2026-11-15", 7)))
+        val factors = report.conditions.single().factors.map { it.factor }
+        assertTrue("Ингредиент: молоко" in factors)
+        assertTrue("Продукт: молоко" in factors)
+        assertFalse(factors.any { it.startsWith("Тип еды:") || it.startsWith("Блюдо:") })
+    }
 }

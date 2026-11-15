@@ -18,8 +18,9 @@ fun StoolAnalysisCard(analysis: StoolAnalysis) {
             analysis.previousMeals.forEach { meal ->
                 val title = MealType.entries.find { it.storageValue == meal.event.mealType }?.title ?: "Прием пищи"
                 Text(title + ": " + meal.items.joinToString("; ") { item ->
-                    item.name + " (" + FoodType.titleFor(item.foodType) + ")" +
-                        if (item.ingredients.isEmpty()) " — состав не указан" else " — " + item.ingredients.joinToString(", ")
+                    item.name + " (" + foodItemTypeTitle(item.kind, item.foodType) + ")" +
+                        if (item.kind == CatalogKind.PRODUCT && item.ingredients.isEmpty()) ""
+                        else if (item.ingredients.isEmpty()) " — состав не указан" else " — " + item.ingredients.joinToString(", ")
                 })
             }
             analysis.conditions.forEach { condition ->

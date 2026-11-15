@@ -26,7 +26,7 @@ $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'
 
 Use your own installation path on another computer. `--version` should report a compatible JVM. [Configuring the Gradle JDK in Android Studio](https://developer.android.com/build/jdks).
 
-The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, and «Меню» (Menu), the former food and medication catalogs. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Cloud backup is disabled. Import, export, and synchronization are unavailable; uninstalling the app deletes its data.
+The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, and «Меню» (Menu), the dish, product, and medication catalogs. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Cloud backup is disabled. Import, export, and synchronization are unavailable; uninstalling the app deletes its data.
 
 ## Calendar and diary
 
@@ -41,13 +41,13 @@ Breakfast, lunch, and dinner each have one daily record containing multiple dish
 ### Food
 
 1. Tap «Добавить» (Add) for a meal or «Изменить» (Edit) for an existing record.
-2. Choose homemade («Домашняя»), restaurant («Ресторанная»), or store-bought («Магазинная») food.
+2. Choose «Блюда» (Dishes) and homemade («Домашняя») or restaurant («Ресторанная») food, or «Продукты» (Products) for an individual product.
 3. Type part of a name. Matches update as you type; case, extra whitespace, and Russian е/ё differences are normalized.
-4. Tap dishes to include them. Select multiple dishes across food types. «Убрать из события» removes a selection.
-5. If there is no exact name in the current catalog, choose «Добавить … в справочник и выбрать» (Add to catalog and select). Enter the name, type, and ingredients. Homemade dishes require at least one ingredient. The created dish is immediately selected in the event being edited.
+4. Tap dishes or products to include them. Select multiple items across sections and food types. «Убрать из события» removes a selection.
+5. If there is no exact match, choose «Добавить … в справочник и выбрать» (Add to catalog and select). For a dish, enter its name and type and check its products; at least one product is required. An individual product only needs a name. The new entry is immediately selected in the event.
 6. Tap «Сохранить событие» (Save event).
 
-Up to 40 matches are shown; refine the search as needed. Search text alone is never saved as a dish. Empty events cannot be saved. A created catalog entry remains even if the event is subsequently canceled.
+Event search shows up to 40 matches; refine the search as needed. Search text alone is never saved as a dish or product. Empty events cannot be saved. A created catalog entry remains even if the event is subsequently canceled.
 
 ### Medication
 
@@ -59,7 +59,7 @@ In «Туалет» (Toilet), select Bristol stool type 1–7. Types 1–2 are l
 
 After saving type 1–2 or 6–7, «Аналитика стула» (Stool analysis) updates automatically. It shows food from the previous calendar day relative to the event date, including snacks. For an October 18 record, this means October 17, rather than a rolling 24-hour window.
 
-The algorithm compares dishes, food types, and known ingredients. Each factor shows days with the selected condition / all observed days following exposure, and the corresponding counts without exposure. Multiple stools or repeated ingredients on one day do not multiply day counts. Constipation and diarrhea are analyzed separately. Only history through the selected date is used.
+The algorithm compares dishes, products, food types, and known ingredients. An individually logged product also counts as an ingredient when compared with dish compositions. Each factor shows days with the selected condition / all observed days following exposure, and the corresponding counts without exposure. Multiple stools or repeated ingredients on one day do not multiply day counts. Constipation and diarrhea are analyzed separately. Only history through the selected date is used.
 
 Comparisons include only days with assessed stool records and food recorded on the preceding day. Missing records are never assumed healthy or symptom-free. A “repeated association” requires at least two affected days after exposure, at least two observed days without exposure, and a higher condition rate with exposure. Up to 12 factors are displayed, prioritizing repeated associations and then rate differences. Insufficient data is stated explicitly.
 
@@ -71,11 +71,17 @@ Enter sleep manually: bedtime on the preceding evening, wake time on the selecte
 
 ## Menu: catalogs
 
-Open «Меню» (Menu), marked with a fork and knife icon, formerly «Справочники» (Catalogs). Food has three sections by source, prefilled with typical examples. Homemade examples include a basic ingredient list: adjust it to your recipe before logging food. Enter one ingredient per line; commas and semicolons are also accepted. Known ingredients can optionally be provided for restaurant and store-bought dishes.
+Open «Меню» (Menu), marked with a fork and knife icon. The first filter row contains «Блюда» (Dishes), «Продукты» (Products), and «Лекарства» (Medication). For dishes, the second row offers homemade and restaurant food; the store-bought category has been removed. Searching by part of a name dynamically filters the current section.
 
-Search, add, rename, change food type and ingredients, or remove entries from the catalog. Removal hides an entry from new events while preserving history. Creating the same name in the same type restores a hidden entry. Identical names are allowed across different food types; duplicates within a type are prevented. Creating an exact match selects the existing entry with its existing ingredients. Names and individual ingredients are limited to 1000 characters.
+In Products, add and edit ingredient and individual product names. The catalog initially contains products from sample recipes and former store-bought entries, such as milk, water, yogurt, and bread. Names are limited to 1000 characters; case, extra whitespace, and Russian е/ё differences do not create duplicates.
 
-Catalog edits affect new events. Saved events retain their original names, food types, and ingredients. Editing an event also retains the historical composition of its existing selections; create a new event to record a new recipe.
+To create or edit a dish, enter its name and type, then check products to assemble its composition. «Поиск продуктов» (Product search) filters the list as text changes: for example, «мол» finds «Молоко». Selections persist when the query changes, and a counter shows the selected quantity. Saving a new or edited dish requires at least one product, including restaurant dishes. Some older entries and restaurant examples retain an unknown composition until manually completed.
+
+If a product is missing, enter its name and choose «Добавить продукт … и выбрать» (Add product and select). Create it in the dialog: it immediately joins the composition while existing selections remain. The product stays in the catalog if the dish is canceled. Composition is no longer entered as free text.
+
+Renaming a product updates its name in current recipes. «Убрать из справочника» hides a product from new recipes while preserving existing compositions; editing an existing recipe lets you keep or uncheck that product. Creating the same name restores a hidden entry. Identical dish names are allowed across food types; duplicates within a type are prevented. An exact match selects the existing entry with its current composition.
+
+Catalog edits affect new events. Logged meals retain their original names, types, and compositions, including renamed or removed products. Editing an event retains historical snapshots of its existing selections; create a new event to record an updated recipe.
 
 ## Reminders and permission
 
@@ -89,7 +95,9 @@ Android may delay inexact reminders to save battery. Reopen the app after reboot
 
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migration 1 → 2 preserves records and schedule settings. Each old free-text food description becomes a single catalog dish marked “Type unspecified (legacy record),” without guessing ingredients. Legacy entries appear in the catalog and can be edited; past events retain the original snapshot. Old medication entries are linked to the catalog while preserving doses. Existing sleep records are retained.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 preserve events and reminder settings. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+
+Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 
 ## Developer verification
 

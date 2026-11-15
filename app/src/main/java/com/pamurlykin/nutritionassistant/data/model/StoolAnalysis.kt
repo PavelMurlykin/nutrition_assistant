@@ -84,8 +84,13 @@ object StoolAnalyzer {
 
     private fun factors(meals: List<MealWithItems>): Set<String> = buildSet {
         meals.flatMap { it.items }.forEach { item ->
-            add("Блюдо: ${normalizeName(item.name)} (${FoodType.titleFor(item.foodType)})")
-            if (item.foodType in FoodType.entries.map { it.storageValue }) add("Тип еды: ${FoodType.titleFor(item.foodType)}")
+            if (item.kind == CatalogKind.PRODUCT) {
+                add("Продукт: ${normalizeName(item.name)}")
+                add("Ингредиент: ${normalizeName(item.name)}")
+            } else {
+                add("Блюдо: ${normalizeName(item.name)} (${FoodType.titleFor(item.foodType)})")
+                if (item.foodType in FoodType.entries.map { it.storageValue }) add("Тип еды: ${FoodType.titleFor(item.foodType)}")
+            }
             item.ingredients.forEach { add("Ингредиент: ${normalizeName(it)}") }
         }
     }

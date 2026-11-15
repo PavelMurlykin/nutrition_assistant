@@ -23,6 +23,7 @@ class NutritionRepository(private val database: NutritionDatabase) {
     suspend fun initialize() = database.withTransaction {
         ensureUser()
         if (catalog.count() == 0) {
+            listOf("Йогурт", "Творог", "Хлеб", "Готовый сэндвич").forEach { product(it) }
             listOf(
                 Triple("Овсяная каша", FoodType.HOME, listOf("Овсяные хлопья", "Вода")),
                 Triple("Омлет", FoodType.HOME, listOf("Яйцо", "Молоко")),
@@ -32,13 +33,10 @@ class NutritionRepository(private val database: NutritionDatabase) {
                 Triple("Пицца", FoodType.RESTAURANT, emptyList()),
                 Triple("Паста", FoodType.RESTAURANT, emptyList()),
                 Triple("Салат", FoodType.RESTAURANT, emptyList()),
-                Triple("Йогурт", FoodType.STORE, emptyList()),
-                Triple("Творог", FoodType.STORE, emptyList()),
-                Triple("Хлеб", FoodType.STORE, emptyList()),
-                Triple("Готовый сэндвич", FoodType.STORE, emptyList()),
             ).forEach { (name, type, ingredients) ->
-                catalog.insert(CatalogEntryEntity(kind = CatalogKind.DISH, name = name,
-                    normalizedName = normalizeName(name), foodType = type.storageValue, ingredients = ingredients))
+                val id = catalog.insert(CatalogEntryEntity(kind = CatalogKind.DISH, name = name,
+                    normalizedName = normalizeName(name), foodType = type.storageValue))
+                catalog.insertProducts(ingredients.map { DishProductEntity(id, product(it).id) })
             }
         }
         // Preserve old free-text records as one catalog item; never guess their type or ingredients.
@@ -52,6 +50,12 @@ class NutritionRepository(private val database: NutritionDatabase) {
             catalog.insertMedicineItems(listOf(MedicineItemEntity(medicineId = event.id, catalogId = entry.id,
                 name = entry.name, dosage = event.dosage)))
         }
+    }
+
+    private suspend fun product(name: String): CatalogEntryEntity {
+        catalog.find(CatalogKind.PRODUCT, "", normalizeName(name))?.let { return it }
+        val entry = CatalogEntryEntity(kind = CatalogKind.PRODUCT, name = name, normalizedName = normalizeName(name))
+        return entry.copy(id = catalog.insert(entry))
     }
 
     private suspend fun legacyEntry(kind: String, name: String, type: String): CatalogEntryEntity {
@@ -70,31 +74,39 @@ class NutritionRepository(private val database: NutritionDatabase) {
         emitAll(users.observeUser(LocalUserDefaults.USER_ID).filterNotNull())
     }
 
-    fun observeCatalog(): Flow<List<CatalogEntryEntity>> = flow {
+    fun observeCatalog(): Flow<List<CatalogItem>> = flow {
         initialize()
         emitAll(catalog.observeEntries())
     }
 
-    suspend fun saveCatalogEntry(id: Long?, kind: String, name: String, type: String, ingredients: List<String>): CatalogEntryEntity =
+    suspend fun saveCatalogEntry(id: Long?, kind: String, name: String, type: String, productIds: List<Long>): CatalogItem =
         database.withTransaction {
-            require(kind == CatalogKind.DISH || kind == CatalogKind.MEDICINE)
+            require(kind in listOf(CatalogKind.DISH, CatalogKind.PRODUCT, CatalogKind.MEDICINE))
             val cleanName = validateText(name)
-            val cleanType = if (kind == CatalogKind.MEDICINE) "" else type.also {
+            val cleanType = if (kind != CatalogKind.DISH) "" else type.also {
                 require(FoodType.entries.any { food -> food.storageValue == it }) { "Выберите тип еды." }
             }
-            val cleanIngredients = if (kind == CatalogKind.DISH) ingredients.map(::validateText)
-                .distinctBy(::normalizeName) else emptyList()
-            require(cleanType != FoodType.HOME.storageValue || cleanIngredients.isNotEmpty()) { "Укажите ингредиенты домашнего блюда." }
+            if (id != null) require(requireNotNull(catalog.get(id)) { "Запись не найдена." }.kind == kind) { "Нельзя изменить раздел записи." }
+            val selected = productIds.distinct()
+            require(kind != CatalogKind.DISH || selected.isNotEmpty()) { "Выберите хотя бы один продукт для блюда." }
+            require(kind == CatalogKind.DISH || selected.isEmpty()) { "Состав можно задать только блюду." }
+            val previous = id?.let { catalog.productIds(it) }.orEmpty()
+            selected.forEach { productId ->
+                val entry = requireNotNull(catalog.get(productId)) { "Продукт не найден." }
+                require(entry.kind == CatalogKind.PRODUCT && (!entry.archived || productId in previous)) { "Продукт убран из справочника. Выберите другой." }
+            }
             val duplicate = catalog.find(kind, cleanType, normalizeName(cleanName))
             if (id == null && duplicate != null) {
                 if (duplicate.archived) catalog.update(duplicate.copy(archived = false))
-                return@withTransaction duplicate.copy(archived = false)
+                return@withTransaction requireNotNull(catalog.getItem(duplicate.id))
             }
             require(duplicate == null || duplicate.id == id) { "Такое название уже есть в этом справочнике." }
-            if (id != null) requireNotNull(catalog.get(id)) { "Запись не найдена." }
             val entry = CatalogEntryEntity(id = id ?: 0, kind = kind, name = cleanName,
-                normalizedName = normalizeName(cleanName), foodType = cleanType, ingredients = cleanIngredients)
-            if (id == null) entry.copy(id = catalog.insert(entry)) else entry.also { catalog.update(it) }
+                normalizedName = normalizeName(cleanName), foodType = cleanType)
+            val entryId = if (id == null) catalog.insert(entry) else id.also { catalog.update(entry) }
+            catalog.clearProducts(entryId)
+            catalog.insertProducts(selected.map { DishProductEntity(entryId, it) })
+            requireNotNull(catalog.getItem(entryId))
         }
 
     suspend fun archiveCatalogEntry(id: Long) = catalog.archive(id)
@@ -150,9 +162,10 @@ class NutritionRepository(private val database: NutritionDatabase) {
         val oldItems = existing?.let { catalog.mealItems(it.id) }.orEmpty()
         val selected = catalogIds.distinct().map { catalogId ->
             oldItems.find { it.catalogId == catalogId }?.copy(id = 0) ?: run {
-                val entry = requireNotNull(catalog.get(catalogId))
-                require(entry.kind == CatalogKind.DISH && !entry.archived) { "Блюдо удалено из справочника." }
-                MealItemEntity(mealId = 0, catalogId = entry.id, name = entry.name, foodType = entry.foodType, ingredients = entry.ingredients)
+                val entry = requireNotNull(catalog.getItem(catalogId))
+                require(entry.kind in listOf(CatalogKind.DISH, CatalogKind.PRODUCT) && !entry.archived) { "Блюдо или продукт убраны из справочника." }
+                MealItemEntity(mealId = 0, catalogId = entry.id, name = entry.name, foodType = entry.foodType,
+                    ingredients = entry.ingredients, kind = entry.kind)
             }
         }
         val event = MealEntity(id = existing?.id ?: 0, userId = LocalUserDefaults.USER_ID, date = date,

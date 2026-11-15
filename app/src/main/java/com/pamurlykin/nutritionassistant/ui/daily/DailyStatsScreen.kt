@@ -49,7 +49,7 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     if (events.isEmpty()) EmptyLabel("Записей нет.")
                     events.forEach { event ->
                         event.items.forEach { item ->
-                            Text(item.name + " · " + FoodType.titleFor(item.foodType), style = MaterialTheme.typography.titleMedium)
+                            Text(item.name + " · " + foodItemTypeTitle(item.kind, item.foodType), style = MaterialTheme.typography.titleMedium)
                             if (item.ingredients.isNotEmpty()) Text(item.ingredients.joinToString(", "))
                         }
                         Actions(busy, { dialog = DailyDialog.Meal(type, event) }, { viewModel.deleteMeal(event.event.id) })
@@ -133,15 +133,15 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
             confirmButton = { TextButton(onClick = dismiss) { Text("Отмена") } })
         is DailyDialog.Meal -> CatalogEventDialog(
             title = current.type.title, kind = CatalogKind.DISH,
-            initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, it.foodType, it.ingredients) }.orEmpty(),
+            initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, it.foodType, it.ingredients, kind = it.kind) }.orEmpty(),
             entries = entries, busy = busy, onDismiss = dismiss,
-            onCreate = { name, type, ingredients, success -> viewModel.saveCatalog(null, CatalogKind.DISH, name, type, ingredients, success) },
+            onCreate = { kind, name, type, productIds, success -> viewModel.saveCatalog(null, kind, name, type, productIds, success) },
             onSave = { selected -> viewModel.saveMeal(current.type, current.event?.event?.id, selected.map { it.id }, dismiss) })
         is DailyDialog.Medicine -> CatalogEventDialog(
             title = "Прием лекарств", kind = CatalogKind.MEDICINE,
             initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, dosage = it.dosage.orEmpty()) }.orEmpty(),
             entries = entries, busy = busy, onDismiss = dismiss,
-            onCreate = { name, type, ingredients, success -> viewModel.saveCatalog(null, CatalogKind.MEDICINE, name, type, ingredients, success) },
+            onCreate = { kind, name, type, productIds, success -> viewModel.saveCatalog(null, kind, name, type, productIds, success) },
             onSave = { selected -> viewModel.saveMedicines(current.event?.event?.id, selected.map { MedicineSelection(it.id, it.dosage) }, dismiss) })
         is DailyDialog.Stool -> StoolDialog(current.entry?.quality, busy, dismiss) { viewModel.saveStool(current.entry?.id, it, dismiss) }
         is DailyDialog.Feeling -> TextEntryDialog("Самочувствие", current.entry?.description.orEmpty(), busy, dismiss) {
