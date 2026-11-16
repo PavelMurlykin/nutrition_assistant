@@ -4,13 +4,13 @@
 
 The app icon is the green “Food calendar” with a plate, fork, and spoon. It adapts to circular and other Android icon shapes. On Android 13+, a monochrome version is available for launchers with themed icons enabled.
 
-The app supports Android 8.0 and later. Open the project in Android Studio with JDK 17 or 21, Android SDK Platform 35, and SDK Build Tools 36.0.0, or build the APK:
+The app supports Android 8.0 and later. Open the project in Android Studio with JDK 17 or 21, Android SDK Platform 37, and SDK Build Tools 36.0.0, or build the APK:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 9.6.0 is included. The build uses Android Gradle Plugin 9.5.1, Kotlin 2.2.10, KSP 2.3.6, and Room 2.7.2 with KSP2 support. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 is included. The build uses Android Gradle Plugin 9.5.1, Kotlin 2.4.21, KSP 2.3.14, and Room 2.8.5 with KSP2 support. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
 
 ### Selecting Java for Gradle
 

@@ -5,7 +5,7 @@
     android:insetRight="18dp"
     android:insetBottom="18dp">
     <bitmap
-        android:src="@drawable/ic_launcher_artwork"
+        android:src="@drawable/ic_launcher_foreground"
         android:gravity="fill"
         android:filter="true" />
 </inset>

@@ -4,13 +4,13 @@
 
 Иконка приложения — зелёный «Календарь питания» с тарелкой, вилкой и ложкой. Она адаптируется к круглой и другим формам значков Android. На Android 13+ предусмотрен монохромный вариант для лаунчеров с включёнными тематическими значками.
 
-Приложение работает на Android 8.0 и новее. Откройте проект в Android Studio с JDK 17 или 21, Android SDK Platform 35 и SDK Build Tools 36.0.0 либо соберите APK командой:
+Приложение работает на Android 8.0 и новее. Откройте проект в Android Studio с JDK 17 или 21, Android SDK Platform 37 и SDK Build Tools 36.0.0 либо соберите APK командой:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 9.6.0 входит в проект. Сборка использует Android Gradle Plugin 9.5.1, Kotlin 2.2.10, KSP 2.3.6 и Room 2.7.2 с поддержкой KSP2. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 входит в проект. Сборка использует Android Gradle Plugin 9.5.1, Kotlin 2.4.21, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
 
 ### Выбор Java для Gradle
 

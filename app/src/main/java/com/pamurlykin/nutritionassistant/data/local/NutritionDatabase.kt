@@ -71,7 +71,7 @@ abstract class NutritionDatabase : RoomDatabase() {
                             .forEach { name ->
                                 val normalized = normalizeName(name)
                                 db.execSQL("INSERT OR IGNORE INTO catalog (kind, name, normalized_name, food_type, ingredients, archived) VALUES ('product', ?, ?, '', '[]', 0)", arrayOf(name, normalized))
-                                if (kind == "dish") db.execSQL("INSERT OR IGNORE INTO dish_products (dish_id, product_id) SELECT ?, id FROM catalog WHERE kind = 'product' AND food_type = '' AND normalized_name = ?", arrayOf(dishId, normalized))
+                                if (kind == "dish") db.execSQL("INSERT OR IGNORE INTO dish_products (dish_id, product_id) SELECT ?, id FROM catalog WHERE kind = 'product' AND food_type = '' AND normalized_name = ?", arrayOf<Any>(dishId, normalized))
                             }
                     }
                 }
