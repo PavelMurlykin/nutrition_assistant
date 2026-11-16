@@ -23,7 +23,7 @@
 
 ## Сборка и проверки
 
-Нужны JDK 17 или 21, Android SDK Platform 37 и SDK Build Tools 36.0.0, доступный SDK через ANDROID_HOME или local.properties. Gradle Wrapper 9.6.0 включен в репозиторий. Используются Android Gradle Plugin 9.5.1, Kotlin 2.4.21, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Первая сборка загружает зависимости.
+Нужны JDK 17 или 21, Android SDK Platform 37 и SDK Build Tools 36.0.0, доступный SDK через ANDROID_HOME или local.properties. Gradle Wrapper 9.6.0 включен в репозиторий. Используются Android Gradle Plugin 9.5.1, Kotlin 2.4.21 через встроенную поддержку AGP, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Первая сборка загружает зависимости.
 
 В Android Studio выберите JDK 21 в **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK**. Если выбрано `GRADLE_LOCAL_JAVA_HOME`, путь берется из `java.home` в локальном `.gradle/config.properties`. Для сборки из терминала отдельно задайте `JAVA_HOME` на JDK 17 или 21. Проверка сборки выполняется с JDK 21. Подробности приведены в руководствах.
 

@@ -10,7 +10,7 @@ The app supports Android 8.0 and later. Open the project in Android Studio with 
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 9.6.0 is included. The build uses Android Gradle Plugin 9.5.1, Kotlin 2.4.21, KSP 2.3.14, and Room 2.8.5 with KSP2 support. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 is included. The build uses Android Gradle Plugin 9.5.1, Kotlin 2.4.21 through AGP built-in Kotlin support, KSP 2.3.14, and Room 2.8.5 with KSP2 support. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
 
 ### Selecting Java for Gradle
 
@@ -102,8 +102,8 @@ Former free-text dish ingredients become linked product entries; equal normalize
 ## Developer verification
 
 ```powershell
-./gradlew.bat :app:testDebugUnitTest :app:lintDebug
-./gradlew.bat :app:connectedDebugAndroidTest
+./gradlew.bat clean :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest --warning-mode=all
+./gradlew.bat :app:connectedDebugAndroidTest --warning-mode=all
 ```
 
 The second command needs a dedicated test emulator or device: the test runner may reinstall the app. Tests cover analysis and search, multi-item events and individual doses, historical snapshots, migration, creating a dish through the interface, the calendar grid, event counts, navigation, and selected-date restoration.

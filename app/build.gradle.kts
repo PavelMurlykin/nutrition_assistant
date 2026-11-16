@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
 }
@@ -43,7 +42,14 @@ android {
         compose = true
     }
 
-    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    packaging {
+        jniLibs {
+            // AndroidX ships all ABIs of this library already stripped of debug symbols.
+            keepDebugSymbols.add("**/libandroidx.graphics.path.so")
+        }
+    }
+
+    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 }
 
 kotlin {

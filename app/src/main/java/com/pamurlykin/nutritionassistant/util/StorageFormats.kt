@@ -12,7 +12,7 @@ object StorageFormats {
     private val timestampFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
     private val displayDateFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+        DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
     private val shortDisplayDateFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("dd.MM.yyyy")
 

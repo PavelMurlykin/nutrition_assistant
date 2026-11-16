@@ -10,7 +10,7 @@
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 9.6.0 входит в проект. Сборка использует Android Gradle Plugin 9.5.1, Kotlin 2.4.21, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 входит в проект. Сборка использует Android Gradle Plugin 9.5.1, Kotlin 2.4.21 через встроенную поддержку AGP, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
 
 ### Выбор Java для Gradle
 
@@ -102,8 +102,8 @@ Android может задерживать неточные напоминани�
 ## Проверка разработчиком
 
 ```powershell
-./gradlew.bat :app:testDebugUnitTest :app:lintDebug
-./gradlew.bat :app:connectedDebugAndroidTest
+./gradlew.bat clean :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest --warning-mode=all
+./gradlew.bat :app:connectedDebugAndroidTest --warning-mode=all
 ```
 
 Для второй команды нужен отдельный тестовый Android-эмулятор или устройство: тестовый runner может переустанавливать приложение. Тесты проверяют аналитику и поиск, составные события и дозировки, сохранность истории, миграцию, создание блюда через интерфейс, календарную сетку, подсчёт событий, навигацию и сохранение выбранной даты.

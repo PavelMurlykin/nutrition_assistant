@@ -77,17 +77,17 @@ class DailyStatsViewModel(
     }
     fun archiveCatalog(id: Long) = perform { repository.archiveCatalogEntry(id) }
     fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) { repository.saveMeal(date, type, id, ids) }
     }
     fun saveMedicines(id: Long?, selections: List<MedicineSelection>, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) { repository.saveMedicines(date, id, selections) }
     }
     fun deleteMeal(id: Long) = perform { repository.deleteMeal(LocalUserDefaults.USER_ID, id) }
     fun deleteMedicine(id: Long) = perform { repository.deleteMedicine(LocalUserDefaults.USER_ID, id) }
     fun saveStool(id: Long?, quality: Int, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) {
             if (id == null) repository.addStool(LocalUserDefaults.USER_ID, date, quality)
             else repository.updateStool(LocalUserDefaults.USER_ID, id, quality)
@@ -95,7 +95,7 @@ class DailyStatsViewModel(
     }
     fun deleteStool(id: Long) = perform { repository.deleteStool(LocalUserDefaults.USER_ID, id) }
     fun saveFeeling(id: Long?, text: String, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) {
             if (id == null) repository.addFeeling(LocalUserDefaults.USER_ID, date, text)
             else repository.updateFeeling(LocalUserDefaults.USER_ID, id, text)
@@ -103,19 +103,19 @@ class DailyStatsViewModel(
     }
     fun deleteFeeling(id: Long) = perform { repository.deleteFeeling(LocalUserDefaults.USER_ID, id) }
     fun setWater(count: Int, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) { repository.setWaterForDay(LocalUserDefaults.USER_ID, date, count) }
     }
     fun incrementWater(delta: Int) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform { repository.incrementWater(LocalUserDefaults.USER_ID, date, delta) }
     }
     fun saveSleep(wakeup: String, bed: String, quality: String?, onSuccess: () -> Unit) {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform(onSuccess) { repository.upsertSleep(LocalUserDefaults.USER_ID, date, wakeup, bed, quality) }
     }
     fun deleteSleep() {
-        val date = selectedDate.value.toString()
+        val date = selectedDate.value
         perform { repository.deleteSleep(LocalUserDefaults.USER_ID, date) }
     }
     companion object {
