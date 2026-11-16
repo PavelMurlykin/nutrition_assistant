@@ -4,19 +4,19 @@
 
 Иконка приложения — зелёный «Календарь питания» с тарелкой, вилкой и ложкой. Она адаптируется к круглой и другим формам значков Android. На Android 13+ предусмотрен монохромный вариант для лаунчеров с включёнными тематическими значками.
 
-Приложение работает на Android 8.0 и новее. Откройте проект в Android Studio с JDK 17 или 21 и Android SDK Platform 35 либо соберите APK командой:
+Приложение работает на Android 8.0 и новее. Откройте проект в Android Studio с JDK 17 или 21, Android SDK Platform 35 и SDK Build Tools 36.0.0 либо соберите APK командой:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 8.13 входит в проект. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 входит в проект. Сборка использует Android Gradle Plugin 9.5.1, Kotlin 2.2.10, KSP 2.3.6 и Room 2.7.2 с поддержкой KSP2. Для сборки задайте путь SDK через ANDROID_HOME или local.properties; при первой сборке нужен интернет для зависимостей. APK находится в app/build/outputs/apk/debug/app-debug.apk. Для установки откройте APK на тестовом устройстве и разрешите установку из выбранного источника в Android. На macOS/Linux команда — ./gradlew :app:assembleDebug.
 
 ### Выбор Java для Gradle
 
 В Android Studio откройте **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** и выберите установленный JDK 21 (для текущего проекта также подходит JDK 17). Если выбран `GRADLE_LOCAL_JAVA_HOME`, используется свойство `java.home` из локального файла `.gradle/config.properties`. Этот файл не включается в Git: путь зависит от компьютера. После изменения выполните **Sync Project with Gradle Files**.
 
-Java 25 из новой Android Studio несовместима с Gradle 8.13; сообщения `Incompatible Gradle JVM version` и `Unsupported class file major version 69` означают, что для сборки нужно выбрать совместимый JDK. Java для запуска самой Android Studio настраивается отдельно. Для терминала задайте `JAVA_HOME`; он не читает `.gradle/config.properties` автоматически. Пример для установленного на этом компьютере JDK:
+Проверка сборки выполняется с JDK 21. Java для запуска самой Android Studio настраивается отдельно. Для терминала задайте `JAVA_HOME`; он не читает `.gradle/config.properties` автоматически. Сообщение `JAVA_HOME is not set and no 'java' command could be found in your PATH` означает, что Java не настроена для терминала. Пример для установленного на этом компьютере JDK:
 
 ```powershell
 $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'

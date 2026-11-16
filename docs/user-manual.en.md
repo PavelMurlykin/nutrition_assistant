@@ -4,19 +4,19 @@
 
 The app icon is the green “Food calendar” with a plate, fork, and spoon. It adapts to circular and other Android icon shapes. On Android 13+, a monochrome version is available for launchers with themed icons enabled.
 
-The app supports Android 8.0 and later. Open the project in Android Studio with JDK 17 or 21 and Android SDK Platform 35, or build the APK:
+The app supports Android 8.0 and later. Open the project in Android Studio with JDK 17 or 21, Android SDK Platform 35, and SDK Build Tools 36.0.0, or build the APK:
 
 ```powershell
 ./gradlew.bat :app:assembleDebug
 ```
 
-Gradle Wrapper 8.13 is included. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
+Gradle Wrapper 9.6.0 is included. The build uses Android Gradle Plugin 9.5.1, Kotlin 2.2.10, KSP 2.3.6, and Room 2.7.2 with KSP2 support. Configure the SDK using ANDROID_HOME or local.properties; the first build needs internet to download dependencies. The APK is app/build/outputs/apk/debug/app-debug.apk. Open it on a test device and allow installation from the selected source in Android settings. On macOS/Linux use ./gradlew :app:assembleDebug.
 
 ### Selecting Java for Gradle
 
 In Android Studio, open **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** and select an installed JDK 21 (JDK 17 also works with this project). When `GRADLE_LOCAL_JAVA_HOME` is selected, the `java.home` property in the local `.gradle/config.properties` file supplies the path. This machine-specific file is excluded from Git. After changing it, run **Sync Project with Gradle Files**.
 
-Java 25 bundled with a newer Android Studio is incompatible with Gradle 8.13. `Incompatible Gradle JVM version` and `Unsupported class file major version 69` mean that a compatible build JDK must be selected. The Java runtime used to launch Android Studio itself is configured separately. For terminal builds, set `JAVA_HOME`; the wrapper does not automatically read `.gradle/config.properties`. Example for the JDK installed on this computer:
+Build verification uses JDK 21. The Java runtime used to launch Android Studio itself is configured separately. For terminal builds, set `JAVA_HOME`; the wrapper does not automatically read `.gradle/config.properties`. `JAVA_HOME is not set and no 'java' command could be found in your PATH` means Java has not been configured for the terminal. Example for the JDK installed on this computer:
 
 ```powershell
 $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'
