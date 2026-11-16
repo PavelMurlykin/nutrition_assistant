@@ -21,6 +21,14 @@
 - [English user manual](docs/user-manual.en.md)
 - [Проверка состояния и ограничения](docs/application-audit.ru.md)
 
+## Доработка приложения
+
+- [Поэтапный план](docs/development-roadmap.ru.md)
+- [Спецификация сценариев и правил данных — этап 1](docs/product-specification.ru.md)
+- [Прогресс реализации](docs/development-progress.ru.md)
+
+План и спецификация описывают целевое поведение. Уже доступные возможности приведены в руководствах пользователя.
+
 ## Сборка и проверки
 
 Нужны JDK 17 или 21, Android SDK Platform 37 и SDK Build Tools 36.0.0, доступный SDK через ANDROID_HOME или local.properties. Gradle Wrapper 9.6.0 включен в репозиторий. Используются Android Gradle Plugin 9.5.1, Kotlin 2.4.21 через встроенную поддержку AGP, KSP 2.3.14 и Room 2.8.5 с поддержкой KSP2. Первая сборка загружает зависимости.
