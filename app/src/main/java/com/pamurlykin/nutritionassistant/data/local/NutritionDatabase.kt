@@ -15,7 +15,7 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         MealEntity::class,
         MedicineEntity::class,
         StoolEntity::class,
-        FeelingEntity::class,
+        HealthEntryEntity::class,
         WaterEntity::class,
         SleepEntity::class,
         NotificationLogEntity::class,
@@ -27,7 +27,7 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         ProductComponentEntity::class,
         DayStatusEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(IngredientConverters::class)
@@ -44,6 +44,25 @@ abstract class NutritionDatabase : RoomDatabase() {
     abstract fun dayStatusDao(): DayStatusDao
 
     companion object {
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE health_entries (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, date TEXT NOT NULL, metric TEXT NOT NULL, value_code TEXT, value_label TEXT, scale_version INTEGER, period TEXT NOT NULL, day_slot INTEGER, duration_minutes INTEGER, activity_kind TEXT, illness_impact TEXT, symptom_codes TEXT NOT NULL, comment TEXT, actual_time TEXT, utc_offset TEXT, time_zone TEXT, time_precision TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL)")
+                db.execSQL("INSERT INTO health_entries (id,user_id,date,metric,period,symptom_codes,comment,time_precision,created_at,updated_at,public_id) SELECT id,user_id,date,'wellbeing','moment','[]',description,'date_only',created_at,updated_at,public_id FROM feelings")
+                db.execSQL("DROP TABLE feelings")
+                db.execSQL("CREATE INDEX index_health_entries_user_id_date ON health_entries (user_id,date)")
+                db.execSQL("CREATE UNIQUE INDEX index_health_entries_public_id ON health_entries (public_id)")
+                db.execSQL("CREATE UNIQUE INDEX index_health_entries_user_id_date_metric_day_slot ON health_entries (user_id,date,metric,day_slot)")
+                db.execSQL("UPDATE backup_aliases SET type = 'health_entries' WHERE type = 'feelings'")
+                listOf("scale_version INTEGER DEFAULT NULL", "quality_label TEXT DEFAULT NULL", "urgency INTEGER DEFAULT NULL", "pain INTEGER DEFAULT NULL").forEach { db.execSQL("ALTER TABLE stools ADD COLUMN $it") }
+                (1..7).forEach { value -> db.execSQL("UPDATE stools SET scale_version = 1, quality_label = ? WHERE quality = ?", arrayOf<Any>(com.pamurlykin.nutritionassistant.data.model.StoolCondition.label(value), value)) }
+                db.execSQL("CREATE TABLE sleeps_new (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, date TEXT NOT NULL, wakeup_time TEXT, bed_time TEXT, quality_description TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL DEFAULT '', bed_date TEXT DEFAULT NULL, wakeup_date TEXT DEFAULT NULL, quality_rating INTEGER DEFAULT NULL, quality_label TEXT DEFAULT NULL, scale_version INTEGER DEFAULT NULL, awakenings INTEGER DEFAULT NULL)")
+                db.execSQL("INSERT INTO sleeps_new (id,user_id,date,wakeup_time,bed_time,quality_description,created_at,updated_at,public_id,bed_date,wakeup_date) SELECT id,user_id,date,wakeup_time,bed_time,quality_description,created_at,updated_at,public_id,bed_date,wakeup_date FROM sleeps")
+                db.execSQL("DROP TABLE sleeps")
+                db.execSQL("ALTER TABLE sleeps_new RENAME TO sleeps")
+                db.execSQL("CREATE UNIQUE INDEX index_sleeps_user_id_date ON sleeps (user_id,date)")
+                db.execSQL("CREATE UNIQUE INDEX index_sleeps_public_id ON sleeps (public_id)")
+            }
+        }
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("ALTER TABLE catalog ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0") }
         }
@@ -137,6 +156,6 @@ abstract class NutritionDatabase : RoomDatabase() {
                 context,
                 NutritionDatabase::class.java,
                 "nutrition_assistant.db",
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build()
     }
 }

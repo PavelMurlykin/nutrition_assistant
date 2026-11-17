@@ -56,6 +56,8 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     CardHeadline(type.title)
                     if (events.isEmpty()) EmptyLabel("Записей нет.")
                     events.forEach { event ->
+                        Text(recordedTimeLabel(event.event.actualTime, event.event.utcOffset, event.event.timeZone), style = MaterialTheme.typography.bodySmall)
+                        event.event.comment?.let { Text(it) }
                         event.items.forEach { item ->
                             Text(item.historyDisplayName() + " · " + foodItemTypeTitle(item.kind, item.foodType), style = MaterialTheme.typography.titleMedium)
                             if (item.ingredients.isNotEmpty()) Text(item.ingredients.joinToString(", "))
@@ -73,6 +75,8 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     CardHeadline("Лекарства")
                     if (snapshot.medicines.isEmpty()) EmptyLabel("Записей нет.")
                     snapshot.medicines.forEach { event ->
+                        Text(recordedTimeLabel(event.event.actualTime, event.event.utcOffset, event.event.timeZone), style = MaterialTheme.typography.bodySmall)
+                        event.event.comment?.let { Text(it) }
                         event.items.forEach { Text(it.name + (it.dosage?.let { dose -> " · " + dose } ?: "")) }
                         Actions(busy, { openDialog(DailyDialog.Medicine(event)) }, { viewModel.deleteMedicine(event.event.id) })
                     }
@@ -83,7 +87,11 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                 NutritionCard(modifier = Modifier.testTag("stool-card")) {
                     CardHeadline("Туалет")
                     snapshot.stools.forEach { entry ->
-                        Text(StoolCondition.label(entry.quality))
+                        Text(entry.qualityLabel ?: StoolCondition.label(entry.quality))
+                        Text(recordedTimeLabel(entry.actualTime, entry.utcOffset, entry.timeZone), style = MaterialTheme.typography.bodySmall)
+                        entry.urgency?.let { Text("Срочность: " + HealthScales.label("urgency", it.toString())) }
+                        entry.pain?.let { Text("Боль: " + HealthScales.label("pain", it.toString())) }
+                        entry.comment?.let { Text(it) }
                         Actions(busy, { openDialog(DailyDialog.Stool(entry)) }, { viewModel.deleteStool(entry.id) })
                     }
                     if (snapshot.stools.isEmpty()) EmptyLabel("Записей нет.")
@@ -92,26 +100,61 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
             }
             item { StoolAnalysisCard(snapshot.analysis) }
             item {
+                NutritionCard(modifier = Modifier.testTag("health-day-card")) {
+                    CardHeadline("Состояние за день")
+                    val daily = snapshot.healthEntries.filter { it.period == "day" }.associateBy { it.metric }
+                    Text("Качество сна: " + (snapshot.sleep?.qualityLabel ?: "Не заполнено"))
+                    HealthScales.metrics.forEach { (key, title) ->
+                        Text(title + ": " + (daily[key]?.valueLabel ?: "Не заполнено"))
+                        daily[key]?.let { entry ->
+                            entry.durationMinutes?.let { Text("Продолжительность: $it мин") }
+                            entry.activityKind?.let { code -> Text(HealthScales.kinds.single { it.code == code }.label) }
+                            entry.illnessImpact?.let { code -> Text("Влияние: " + HealthScales.impact.single { it.code == code }.label) }
+                            if (entry.symptomCodes.isNotEmpty()) Text(entry.symptomCodes.joinToString(", ") { code -> HealthScales.symptoms.single { it.code == code }.label })
+                            entry.comment?.let { Text(it) }
+                        }
+                    }
+                    TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.HealthDay) }) { Text("Заполнить день") }
+                    val status = snapshot.dayStatus
+                    Text("Питание: " + if (status?.foodComplete == true) "подтверждено" else "не подтверждено")
+                    Text("Симптомы: " + if (status?.symptomsComplete == true) "подтверждены" else "не подтверждены")
+                    TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Completeness) }) { Text("Проверить полноту дня") }
+                }
+            }
+            item {
+                NutritionCard(modifier = Modifier.testTag("health-events-card")) {
+                    CardHeadline("Отдельные наблюдения")
+                    val events = snapshot.healthEntries.filter { it.period == "moment" }
+                    if (events.isEmpty()) EmptyLabel("Наблюдений нет.")
+                    events.forEach { entry ->
+                        Text(HealthScales.metrics.getValue(entry.metric) + ": " + (entry.valueLabel ?: "Без оценки (старая запись)"), style = MaterialTheme.typography.titleMedium)
+                        Text(recordedTimeLabel(entry.actualTime, entry.utcOffset, entry.timeZone), style = MaterialTheme.typography.bodySmall)
+                        entry.durationMinutes?.let { Text("Известная продолжительность: $it мин") }
+                        entry.activityKind?.let { code -> Text(HealthScales.kinds.single { it.code == code }.label) }
+                        entry.illnessImpact?.let { code -> Text("Влияние: " + HealthScales.impact.single { it.code == code }.label) }
+                        if (entry.symptomCodes.isNotEmpty()) Text(entry.symptomCodes.joinToString(", ") { code -> HealthScales.symptoms.single { it.code == code }.label })
+                        entry.comment?.let { Text(it) }
+                        Actions(busy, { openDialog(DailyDialog.Health(entry.metric, entry)) }, { viewModel.deleteFeeling(entry.id) })
+                    }
+                    val activity = activitySummary(events)
+                    if (activity.maximum != null) Text("События активности: максимальная отмеченная интенсивность — " + HealthScales.label("activity", activity.maximum) +
+                        "; сумма известных минут — ${activity.knownMinutes}; без длительности — ${activity.unknownDurationCount}. Дневная оценка хранится отдельно.")
+                    TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.HealthChoice) }) { Text("Добавить наблюдение") }
+                }
+            }
+            item {
                 NutritionCard {
                     CardHeadline("Сон")
                     val sleep = snapshot.sleep
                     if (sleep == null) EmptyLabel("Сон и его качество еще не записаны.")
                     else {
-                        Text("Отбой: " + sleep.bedTime + " · Подъем: " + sleep.wakeupTime)
-                        Text(sleep.qualityDescription ?: "Качество не указано")
+                        Text("Качество: " + (sleep.qualityLabel ?: "Не оценено"))
+                        if (sleep.bedTime != null) Text("Отбой: " + (sleep.bedDate ?: "дата неизвестна") + " " + sleep.bedTime + " · Подъем: " + (sleep.wakeupDate ?: "дата неизвестна") + " " + sleep.wakeupTime)
+                        sleep.bedIntervalMinutes()?.let { Text("В постели по местным часам: ${it / 60} ч ${it % 60} мин") }
+                        sleep.awakenings?.let { Text("Пробуждения: $it") }
+                        sleep.qualityDescription?.let { Text(it) }
                     }
                     Actions(busy, { openDialog(DailyDialog.Sleep(sleep)) }, if (sleep == null) null else ({ viewModel.deleteSleep() }))
-                }
-            }
-            item {
-                NutritionCard {
-                    CardHeadline("Самочувствие")
-                    if (snapshot.feelings.isEmpty()) EmptyLabel("Записей нет.")
-                    snapshot.feelings.forEach { entry ->
-                        Text(entry.description)
-                        Actions(busy, { openDialog(DailyDialog.Feeling(entry)) }, { viewModel.deleteFeeling(entry.id) })
-                    }
-                    TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Feeling(null)) }) { Text("Добавить") }
                 }
             }
             item {
@@ -139,6 +182,9 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     }
                 }
                 if (recentMeals.isNotEmpty()) TextButton(onClick = { openDialog(DailyDialog.Recent) }) { Text("Повторить недавний приём") }
+                TextButton(onClick = { openDialog(DailyDialog.HealthDay) }) { Text("Состояние за день") }
+                TextButton(onClick = { openDialog(DailyDialog.HealthChoice) }) { Text("Отдельное наблюдение") }
+                TextButton(onClick = { openDialog(DailyDialog.Completeness) }) { Text("Полнота дня") }
                 TextButton(onClick = { openDialog(DailyDialog.Medicine(null)) }) { Text("Прием лекарств") }
                 TextButton(onClick = { openDialog(DailyDialog.Stool(null)) }) { Text("Туалет") }
             } },
@@ -158,9 +204,10 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                 initial = source?.items?.map { SelectedCatalogItem(it.catalogId, it.historyDisplayName(), it.foodType, it.ingredients, kind = it.kind,
                     quantity = it.quantity.orEmpty(), unit = it.unit, comment = it.comment.orEmpty(), snapshot = it.compositionSnapshot) }.orEmpty(),
                 entries = entries, busy = busy, onDismiss = dismiss, onCreate = viewModel::saveDraft,
+                date = snapshot.date, initialTime = current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(),
                 initialComment = source?.event?.comment.orEmpty(), recentIds = recentIds, onFavorite = viewModel::favorite, repeating = current.repeatSource != null,
-                onSave = { selected, comment -> viewModel.saveMeal(current.type, current.event?.event?.id, selected.map { it.id }, dismiss,
-                    context = EventContext(current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), comment),
+                onSave = { selected, comment, recorded -> viewModel.saveMeal(current.type, current.event?.event?.id, selected.map { it.id }, dismiss,
+                    context = EventContext(recorded, comment),
                     portions = selected.associate { it.id to Portion(it.quantity.takeIf(String::isNotBlank), it.unit) },
                     comments = selected.associate { it.id to it.comment.takeIf(String::isNotBlank) }, refresh = selected.filter { it.refresh }.map { it.id }.toSet(),
                     sourceId = current.repeatSource?.event?.id, expectedHashes = selected.mapNotNull { item -> item.expectedHash?.let { item.id to it } }.toMap()) })
@@ -169,18 +216,20 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
             initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, dosage = it.dosage.orEmpty(), kind = CatalogKind.MEDICINE,
                 quantity = it.quantity.orEmpty(), unit = it.unit, comment = it.comment.orEmpty()) }.orEmpty(),
             entries = entries, busy = busy, onDismiss = dismiss, onCreate = viewModel::saveDraft,
+            date = snapshot.date, initialTime = current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(),
             initialComment = current.event?.event?.comment.orEmpty(), recentIds = recentIds, onFavorite = viewModel::favorite,
-            onSave = { selected, comment -> viewModel.saveMedicines(current.event?.event?.id,
+            onSave = { selected, comment, recorded -> viewModel.saveMedicines(current.event?.event?.id,
                 selected.map { MedicineSelection(it.id, it.dosage, Portion(it.quantity.takeIf(String::isNotBlank), it.unit), it.comment, true) }, dismiss,
-                context = EventContext(current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), comment)) })
-        is DailyDialog.Stool -> StoolDialog(current.entry?.quality, busy, dismiss) { viewModel.saveStool(current.entry?.id, it, dismiss) }
-        is DailyDialog.Feeling -> TextEntryDialog("Самочувствие", current.entry?.description.orEmpty(), busy, dismiss) {
-            viewModel.saveFeeling(current.entry?.id, it, dismiss)
-        }
+                context = EventContext(recorded, comment)) })
+        DailyDialog.HealthDay -> HealthDayDialog(snapshot, busy, dismiss) { values, quality, comment -> viewModel.saveDayHealth(values, quality, comment, dismiss) }
+        DailyDialog.Completeness -> CompletenessDialog(snapshot.dayStatus, busy, dismiss) { food, symptoms, summary -> viewModel.confirmDay(food, symptoms, summary, dismiss) }
+        DailyDialog.HealthChoice -> AppDialog(onDismissRequest = dismiss, title = { Text("Какое наблюдение добавить?") }, text = {
+            Column { HealthScales.metrics.forEach { (code, title) -> TextButton(onClick = { openDialog(DailyDialog.Health(code, null)) }) { Text(title) } } }
+        }, confirmButton = { AppDismissButton() }, dismissButton = null)
+        is DailyDialog.Health -> HealthObservationDialog(snapshot.date, current.metric, current.entry, busy, dismiss) { viewModel.saveHealth(current.entry?.id, it, dismiss) }
+        is DailyDialog.Stool -> StructuredStoolDialog(snapshot.date, current.entry, busy, dismiss) { quality, context, details -> viewModel.saveStool(current.entry?.id, quality, dismiss, context, details) }
         is DailyDialog.Water -> WaterDialog(current.count, busy, dismiss) { viewModel.setWater(it, dismiss) }
-        is DailyDialog.Sleep -> SleepDialog(current.entry, busy, dismiss) { wakeup, bed, quality ->
-            viewModel.saveSleep(wakeup, bed, quality, dismiss)
-        }
+        is DailyDialog.Sleep -> StructuredSleepDialog(snapshot.date, current.entry, busy, dismiss) { viewModel.saveSleepDraft(it, dismiss) }
         null -> Unit
     }
     snapshot?.meals?.flatMap { it.items }?.find { it.id == compositionItem }?.let { item ->
@@ -200,31 +249,6 @@ private fun Actions(busy: Boolean, onEdit: () -> Unit, onDelete: (() -> Unit)?) 
 }
 
 @Composable
-private fun TextEntryDialog(title: String, initial: String, busy: Boolean, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var text by rememberSaveable { mutableStateOf(initial) }
-    AppDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(title) }, hasChanges = text != initial, busy = busy,
-        text = { AppTextField(text, { text = it }, label = { Text("Описание") }, isError = text.length > 1000, singleLine = false, enabled = !busy) },
-        confirmButton = { TextButton(enabled = !busy && text.isNotBlank() && text.length <= 1000, onClick = { onSave(text.trim()) }) { Text("Сохранить") } },
-        dismissButton = { AppDismissButton(enabled = !busy) })
-}
-
-@Composable
-private fun StoolDialog(initial: Int?, busy: Boolean, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
-    var quality by rememberSaveable { mutableStateOf(initial) }
-    AppDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Качество стула") }, hasChanges = quality != initial, busy = busy,
-        text = {
-            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
-                Text("Выберите тип по Бристольской шкале.")
-                (1..7).forEach { value ->
-                    AppRadioChoice(StoolCondition.label(value), quality == value, enabled = !busy) { quality = value }
-                }
-            }
-        },
-        confirmButton = { TextButton(enabled = !busy && quality in 1..7, onClick = { quality?.let(onSave) }) { Text("Сохранить") } },
-        dismissButton = { AppDismissButton(enabled = !busy) })
-}
-
-@Composable
 private fun WaterDialog(initial: Int, busy: Boolean, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
     var text by rememberSaveable { mutableStateOf(initial.toString()) }
     val value = text.toIntOrNull()
@@ -235,48 +259,32 @@ private fun WaterDialog(initial: Int, busy: Boolean, onDismiss: () -> Unit, onSa
         dismissButton = { AppDismissButton(enabled = !busy) })
 }
 
-@Composable
-private fun SleepDialog(initial: SleepEntity?, busy: Boolean, onDismiss: () -> Unit, onSave: (String, String, String?) -> Unit) {
-    var wakeup by rememberSaveable { mutableStateOf(initial?.wakeupTime ?: "07:00") }
-    var bed by rememberSaveable { mutableStateOf(initial?.bedTime ?: "23:00") }
-    var quality by rememberSaveable { mutableStateOf(initial?.qualityDescription.orEmpty()) }
-    var timeTarget by rememberSaveable { mutableStateOf<String?>(null) }
-    AppDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Сон") }, busy = busy,
-        hasChanges = wakeup != (initial?.wakeupTime ?: "07:00") || bed != (initial?.bedTime ?: "23:00") || quality != initial?.qualityDescription.orEmpty(),
-        text = {
-            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
-                Text("Отбой предыдущим вечером, подъем в выбранный день.")
-                TextButton(enabled = !busy, onClick = { timeTarget = "bed" }) { Text("Отбой: " + bed) }
-                TextButton(enabled = !busy, onClick = { timeTarget = "wakeup" }) { Text("Подъем: " + wakeup) }
-                AppTextField(quality, { quality = it }, label = { Text("Качество сна") }, isError = quality.length > 1000, singleLine = false, enabled = !busy)
-            }
-        },
-        confirmButton = { TextButton(enabled = !busy && quality.length <= 1000, onClick = { onSave(wakeup, bed, quality.trim().ifBlank { null }) }) { Text("Сохранить") } },
-        dismissButton = { AppDismissButton(enabled = !busy) })
-    timeTarget?.let { target -> AppTimePicker(if (target == "bed") bed else wakeup, onDismiss = { timeTarget = null },
-        onSelected = { if (target == "bed") bed = it else wakeup = it }) }
-}
-
 private sealed interface DailyDialog {
+    data object HealthDay : DailyDialog
+    data object HealthChoice : DailyDialog
+    data object Completeness : DailyDialog
+    data class Health(val metric: String, val entry: HealthEntryEntity?) : DailyDialog
     data object Recent : DailyDialog
     data object Choice : DailyDialog
     data object Date : DailyDialog
     data class Meal(val type: MealType, val event: MealWithItems?, val repeatSource: MealWithItems? = null) : DailyDialog
     data class Medicine(val event: MedicineWithItems?) : DailyDialog
     data class Stool(val entry: StoolEntity?) : DailyDialog
-    data class Feeling(val entry: FeelingEntity?) : DailyDialog
     data class Sleep(val entry: SleepEntity?) : DailyDialog
     data class Water(val count: Int) : DailyDialog
 }
 
 private fun DailyDialog.storageKey(): String = when (this) {
+    DailyDialog.HealthDay -> "health-day"
+    DailyDialog.HealthChoice -> "health-choice"
+    DailyDialog.Completeness -> "completeness"
+    is DailyDialog.Health -> "health:${metric}:${entry?.id ?: 0}"
     DailyDialog.Recent -> "recent"
     DailyDialog.Choice -> "choice"
     DailyDialog.Date -> "date"
     is DailyDialog.Meal -> if (repeatSource != null) "repeat:${repeatSource.event.id}" else "meal:${type.name}:${event?.event?.id ?: 0}"
     is DailyDialog.Medicine -> "medicine:${event?.event?.id ?: 0}"
     is DailyDialog.Stool -> "stool:${entry?.id ?: 0}"
-    is DailyDialog.Feeling -> "feeling:${entry?.id ?: 0}"
     is DailyDialog.Sleep -> "sleep"
     is DailyDialog.Water -> "water"
 }
@@ -286,6 +294,10 @@ private fun restoreDialog(key: String?, snapshot: DailyStatsSnapshot, recent: Li
     val parts = key.split(':')
     val id = parts.last().toLongOrNull() ?: 0
     return when (parts.first()) {
+        "health-day" -> DailyDialog.HealthDay
+        "health-choice" -> DailyDialog.HealthChoice
+        "completeness" -> DailyDialog.Completeness
+        "health" -> DailyDialog.Health(parts[1], snapshot.healthEntries.find { it.id == id })
         "recent" -> DailyDialog.Recent
         "repeat" -> recent.find { it.event.id == id }?.let { source -> DailyDialog.Meal(MealType.entries.single { it.storageValue == source.event.mealType }, null, source) }
         "choice" -> DailyDialog.Choice
@@ -293,7 +305,7 @@ private fun restoreDialog(key: String?, snapshot: DailyStatsSnapshot, recent: Li
         "meal" -> DailyDialog.Meal(MealType.valueOf(parts[1]), snapshot.meals.find { it.event.id == id })
         "medicine" -> DailyDialog.Medicine(snapshot.medicines.find { it.event.id == id })
         "stool" -> DailyDialog.Stool(snapshot.stools.find { it.id == id })
-        "feeling" -> DailyDialog.Feeling(snapshot.feelings.find { it.id == id })
+        "feeling" -> DailyDialog.Health("wellbeing", snapshot.healthEntries.find { it.id == id })
         "sleep" -> DailyDialog.Sleep(snapshot.sleep)
         "water" -> DailyDialog.Water(snapshot.waterCount)
         else -> null

@@ -99,11 +99,30 @@ class DailyStatsViewModel(
     }
     fun deleteMeal(id: Long) = perform { repository.deleteMeal(LocalUserDefaults.USER_ID, id) }
     fun deleteMedicine(id: Long) = perform { repository.deleteMedicine(LocalUserDefaults.USER_ID, id) }
-    fun saveStool(id: Long?, quality: Int, onSuccess: () -> Unit) {
+    fun saveDayHealth(values: Map<String, HealthDraft?>, sleepQuality: Int?, sleepComment: String?, onSuccess: () -> Unit) {
+        val date = selectedDate.value
+        perform(onSuccess) { repository.health.saveDay(LocalUserDefaults.USER_ID, date, values, sleepQuality, sleepComment) }
+    }
+    fun saveHealth(id: Long?, draft: HealthDraft, onSuccess: () -> Unit) {
+        val date = selectedDate.value
+        perform(onSuccess) { repository.health.save(LocalUserDefaults.USER_ID, date, id, draft) }
+    }
+    fun confirmDay(food: Boolean, symptoms: Boolean, summary: String?, onSuccess: () -> Unit) {
+        val date = selectedDate.value
+        perform(onSuccess) { repository.confirmDay(LocalUserDefaults.USER_ID, date, food, symptoms, summary) }
+    }
+    fun saveSleepDraft(draft: SleepDraft, onSuccess: () -> Unit) {
         val date = selectedDate.value
         perform(onSuccess) {
-            if (id == null) repository.addStool(LocalUserDefaults.USER_ID, date, quality)
-            else repository.updateStool(LocalUserDefaults.USER_ID, id, quality)
+            if (draft.quality == null && draft.comment.isNullOrBlank() && draft.awakenings == null && draft.bedTime == null) repository.health.deleteSleep(LocalUserDefaults.USER_ID, date)
+            else repository.health.saveSleep(LocalUserDefaults.USER_ID, date, draft)
+        }
+    }
+    fun saveStool(id: Long?, quality: Int, onSuccess: () -> Unit, context: EventContext? = null, details: StoolDetails? = null) {
+        val date = selectedDate.value
+        perform(onSuccess) {
+            if (id == null) repository.addStool(LocalUserDefaults.USER_ID, date, quality, context ?: EventContext(), details ?: StoolDetails())
+            else repository.updateStool(LocalUserDefaults.USER_ID, id, quality, context, details)
         }
     }
     fun deleteStool(id: Long) = perform { repository.deleteStool(LocalUserDefaults.USER_ID, id) }

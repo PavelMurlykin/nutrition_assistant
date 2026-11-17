@@ -50,4 +50,5 @@ data class DailyStatsSnapshot(
     val sleep: SleepEntity?,
     val analysis: StoolAnalysis,
     val dayStatus: DayStatusEntity? = null,
+    val healthEntries: List<HealthEntryEntity> = emptyList(),
 )

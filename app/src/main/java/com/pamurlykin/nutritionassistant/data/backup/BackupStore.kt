@@ -94,7 +94,7 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
             db.execSQL("UPDATE users SET ${fields.joinToString(",") { "$it = ?" }} WHERE user_id = ?", args.toTypedArray())
         }
         // New observations invalidate confirmations of existing local days. Imported new confirmations are validated below.
-        current.additions.filter { it.type in setOf("meals", "stools", "feelings") }.forEach { event ->
+        current.additions.filter { it.type in setOf("meals", "medicines", "stools", "health_entries", "sleeps") }.forEach { event ->
             val oldStatus = local.records.find { it.type == "day_status" && it.values["date"] == event.values["date"] }
             if (oldStatus != null) {
                 val fields = if (event.type == "meals") "food_complete = 0" else "symptoms_complete = 0, stool_summary = NULL"
@@ -206,9 +206,14 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
         }
         val catalogTargets = fileByType["catalog"].orEmpty().mapNotNull { mapping[it.publicId] }
         require(catalogTargets.distinct().size == catalogTargets.size) { "Две позиции файла сопоставлены с одной записью справочника. Импорт остановлен." }
-        val dailyByKey = local.records.filter { it.type in setOf("water", "sleeps", "day_status") }.associateBy { it.type to it.values["date"] }
-        file.records.filter { it.type in setOf("water", "sleeps", "day_status") && it.publicId !in mapping }.forEach { record ->
-            dailyByKey[record.type to record.values["date"]]?.let { mapping[record.publicId] = it.publicId }
+        fun dailyKey(record: BackupRecord): List<Any?>? = when {
+            record.type in setOf("water", "sleeps", "day_status") -> listOf(record.type, record.values["date"])
+            record.type == "health_entries" && record.values["day_slot"] == 1L -> listOf(record.type, record.values["date"], record.values["metric"])
+            else -> null
+        }
+        val dailyByKey = local.records.mapNotNull { record -> dailyKey(record)?.let { it to record } }.toMap()
+        file.records.filter { it.publicId !in mapping }.forEach { record ->
+            dailyKey(record)?.let { key -> dailyByKey[key]?.let { mapping[record.publicId] = it.publicId } }
         }
         fun mappedValues(record: BackupRecord): Map<String, Any?> = record.values.mapValues { (key, value) ->
             when (BackupSchema.tables.getValue(record.type).fields[key]) {
@@ -274,6 +279,6 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
 
 fun tableTitle(type: String): String = when (type) {
     "users" -> "Настройки"; "catalog" -> "Справочник"; "meals" -> "Приёмы пищи"; "medicines" -> "Приёмы лекарств"
-    "stools" -> "Стул"; "feelings" -> "Самочувствие"; "water" -> "Вода"; "sleeps" -> "Сон"
+    "stools" -> "Стул"; "health_entries" -> "Наблюдения состояния"; "water" -> "Вода"; "sleeps" -> "Сон"
     "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
 }

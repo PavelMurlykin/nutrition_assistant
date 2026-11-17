@@ -19,6 +19,7 @@ class NutritionRepository(private val database: NutritionDatabase) {
     private val catalog = database.catalogDao()
     private val dayStatus = database.dayStatusDao()
     val foodCatalog = FoodCatalog(database)
+    val health = HealthRepository(database)
     private val initialization = Mutex()
     private var catalogInitialized = false
 
@@ -157,9 +158,9 @@ class NutritionRepository(private val database: NutritionDatabase) {
             val allStools = args[3] as List<StoolEntity>
             DailyStatsSnapshot(date, args[0] as UserEntity, allMeals.filter { it.event.date == date },
                 (args[2] as List<MedicineWithItems>).filter { it.event.date == date },
-                allStools.filter { it.date == date }, args[4] as List<FeelingEntity>,
+                allStools.filter { it.date == date }, (args[4] as List<FeelingEntity>).filter { it.metric == "wellbeing" && it.valueCode == null },
                 (args[5] as WaterEntity?)?.glassesCount ?: 0, args[6] as SleepEntity?,
-                StoolAnalyzer.analyze(date, allMeals, allStools), args[7] as DayStatusEntity?)
+                StoolAnalyzer.analyze(date, allMeals, allStools), args[7] as DayStatusEntity?, args[4] as List<HealthEntryEntity>)
         })
     }
 
@@ -237,6 +238,7 @@ class NutritionRepository(private val database: NutritionDatabase) {
         val eventId = if (existing == null) medicines.insert(event) else existing.id.also { medicines.update(event) }
         catalog.clearMedicine(eventId)
         catalog.insertMedicineItems(selected.map { it.copy(medicineId = eventId) })
+        dayStatus.invalidateSymptoms(LocalUserDefaults.USER_ID, date, StorageFormats.nowTimestamp())
     }
 
     suspend fun deleteMeal(userId: Long, id: Long) = database.withTransaction {
@@ -244,19 +246,26 @@ class NutritionRepository(private val database: NutritionDatabase) {
         meals.deleteById(userId, id)
         if (old?.userId == userId) dayStatus.invalidateFood(userId, old.date, StorageFormats.nowTimestamp())
     }
-    suspend fun deleteMedicine(userId: Long, id: Long) = medicines.deleteById(userId, id)
-    suspend fun addStool(userId: Long, date: String, quality: Int, context: EventContext = EventContext()) = database.withTransaction {
+    suspend fun deleteMedicine(userId: Long, id: Long) = database.withTransaction {
+        val old = medicines.getById(id)
+        medicines.deleteById(userId, id)
+        if (old?.userId == userId) dayStatus.invalidateSymptoms(userId, old.date, StorageFormats.nowTimestamp())
+    }
+    suspend fun addStool(userId: Long, date: String, quality: Int, context: EventContext = EventContext(), stoolDetails: StoolDetails = StoolDetails()) = database.withTransaction {
         val details = context.validated(date)
-        stools.insert(StoolEntity(userId = userId, date = date, quality = validateStoolQuality(quality),
+        val auxiliary = stoolDetails.validated()
+        stools.insert(StoolEntity(userId = userId, date = date, quality = validateStoolQuality(quality), scaleVersion = 1, qualityLabel = StoolCondition.label(quality),
+            urgency = auxiliary.urgency, pain = auxiliary.pain,
             actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
             timePrecision = details.recordedTime.precision, comment = details.comment))
         dayStatus.invalidateSymptoms(userId, date, StorageFormats.nowTimestamp())
     }
-    suspend fun updateStool(userId: Long, id: Long, quality: Int, context: EventContext? = null) = database.withTransaction {
+    suspend fun updateStool(userId: Long, id: Long, quality: Int, context: EventContext? = null, stoolDetails: StoolDetails? = null) = database.withTransaction {
         val entry = requireNotNull(stools.getById(id))
         require(entry.userId == userId)
         val details = (context ?: EventContext(RecordedTime(entry.actualTime, entry.utcOffset, entry.timeZone), entry.comment)).validated(entry.date)
-        stools.update(entry.copy(quality = validateStoolQuality(quality), updatedAt = StorageFormats.nowTimestamp(),
+        val auxiliary = (stoolDetails ?: StoolDetails(entry.urgency, entry.pain)).validated()
+        stools.update(entry.copy(quality = validateStoolQuality(quality), scaleVersion = 1, qualityLabel = StoolCondition.label(quality), urgency = auxiliary.urgency, pain = auxiliary.pain, updatedAt = StorageFormats.nowTimestamp(),
             actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
             timePrecision = details.recordedTime.precision, comment = details.comment))
         dayStatus.invalidateSymptoms(userId, entry.date, StorageFormats.nowTimestamp())
@@ -269,12 +278,12 @@ class NutritionRepository(private val database: NutritionDatabase) {
     suspend fun confirmDay(userId: Long, date: String, foodComplete: Boolean, symptomsComplete: Boolean, stoolSummary: String?) = database.withTransaction {
         validateDay(date)
         require(stoolSummary in setOf(null, "no_diarrhea", "diarrhea", "no_stool"))
-        require(if (symptomsComplete) stoolSummary != null else stoolSummary == null)
+        require(if (symptomsComplete) stoolSummary != null else stoolSummary == null) { "Укажите итог стула для подтверждения симптомов." }
         val entries = stools.getForDay(userId, date)
         if (symptomsComplete) {
-            require(stoolSummary != "no_stool" || entries.isEmpty())
-            require(stoolSummary != "no_diarrhea" || entries.none { it.quality in 6..7 })
-            require(stoolSummary != "diarrhea" || entries.any { it.quality in 6..7 })
+            require(stoolSummary != "no_stool" || entries.isEmpty()) { "За день уже есть записи стула. Проверьте итог и записи." }
+            require(stoolSummary != "no_diarrhea" || entries.none { it.quality in 6..7 }) { "За день записан жидкий стул типа 6–7." }
+            require(stoolSummary != "diarrhea" || entries.any { it.quality in 6..7 }) { "Сначала запишите эпизод типа 6–7 или измените итог дня." }
         }
         val old = dayStatus.get(userId, date)
         val value = (old ?: DayStatusEntity(userId = userId, date = date)).copy(foodComplete = foodComplete,
@@ -283,13 +292,13 @@ class NutritionRepository(private val database: NutritionDatabase) {
     }
     suspend fun addFeeling(userId: Long, date: String, text: String) = database.withTransaction {
         validateDay(date)
-        feelings.insert(FeelingEntity(userId = userId, date = date, description = validateText(text)))
+        feelings.insert(FeelingEntity(userId = userId, date = date, comment = validateText(text)))
         dayStatus.invalidateSymptoms(userId, date, StorageFormats.nowTimestamp())
     }
     suspend fun updateFeeling(userId: Long, id: Long, text: String) = database.withTransaction {
         val entry = requireNotNull(feelings.getById(id))
         require(entry.userId == userId)
-        feelings.update(entry.copy(description = validateText(text), updatedAt = StorageFormats.nowTimestamp()))
+        feelings.update(entry.copy(comment = validateText(text), updatedAt = StorageFormats.nowTimestamp()))
         dayStatus.invalidateSymptoms(userId, entry.date, StorageFormats.nowTimestamp())
     }
     suspend fun deleteFeeling(userId: Long, id: Long) = database.withTransaction {
@@ -309,20 +318,13 @@ class NutritionRepository(private val database: NutritionDatabase) {
         setWaterForDay(userId, date, (count + delta).coerceAtLeast(0))
     }
     suspend fun upsertSleep(userId: Long, date: String, wakeupTime: String, bedTime: String, qualityDescription: String?, period: SleepPeriod? = null) = database.withTransaction {
-        validateDay(date)
-        val wakeup = validateTime(wakeupTime); val bed = validateTime(bedTime)
         val old = sleeps.getForDay(userId, date)
-        // Legacy nights retain unknown dates; new records refer to the night ending on the selected day.
-        val actualPeriod = period ?: if (old == null) SleepPeriod(
-            if (bed >= wakeup) validateDay(date).minusDays(1).toString() else date, date)
+        val wakeup = validateTime(wakeupTime); val bed = validateTime(bedTime)
+        val actualPeriod = period ?: if (old == null) SleepPeriod(if (bed >= wakeup) validateDay(date).minusDays(1).toString() else date, date)
             else old.bedDate?.let { SleepPeriod(it, requireNotNull(old.wakeupDate)) }
-        actualPeriod?.validate(bed, wakeup)
-        require(actualPeriod == null || actualPeriod.wakeupDate == date)
-        sleeps.upsert((old ?: SleepEntity(userId = userId, date = date, wakeupTime = wakeup, bedTime = bed)).copy(
-            wakeupTime = wakeup, bedTime = bed, qualityDescription = cleanComment(qualityDescription),
-            bedDate = actualPeriod?.bedDate, wakeupDate = actualPeriod?.wakeupDate, updatedAt = StorageFormats.nowTimestamp()))
+        health.saveSleep(userId, date, SleepDraft(old?.qualityRating, qualityDescription, old?.awakenings, bed, wakeup, actualPeriod?.bedDate, actualPeriod?.wakeupDate))
     }
-    suspend fun deleteSleep(userId: Long, date: String) = sleeps.deleteForDay(userId, date)
+    suspend fun deleteSleep(userId: Long, date: String) = health.deleteSleep(userId, date)
     suspend fun markNotificationSent(userId: Long, type: String, date: String): Boolean =
         database.notificationLogDao().insert(NotificationLogEntity(userId = userId, type = type, date = date)) != -1L
 }

@@ -73,7 +73,35 @@ internal object BackupSchema {
         put("day_status", BackupTable(fields = event + fields("food_complete" to ValueKind.BOOLEAN,
             "symptoms_complete" to ValueKind.BOOLEAN, "stool_summary" to ValueKind.OPTIONAL_TEXT) + times))
     }
-    val tables = versionTwo.mapValues { (name, table) -> if (name == "catalog") table.copy(fields = table.fields + ("favorite" to ValueKind.BOOLEAN)) else table }
+    val versionThree = versionTwo.mapValues { (name, table) -> if (name == "catalog") table.copy(fields = table.fields + ("favorite" to ValueKind.BOOLEAN)) else table }
+    val tables = linkedMapOf<String, BackupTable>().apply {
+        versionThree.forEach { (name, schema) ->
+            when (name) {
+                "feelings" -> put("health_entries", BackupTable(fields = event + times + actualTime + fields(
+                    "metric" to ValueKind.TEXT, "value_code" to ValueKind.OPTIONAL_TEXT, "value_label" to ValueKind.OPTIONAL_TEXT,
+                    "scale_version" to ValueKind.OPTIONAL_INTEGER, "period" to ValueKind.TEXT, "day_slot" to ValueKind.OPTIONAL_INTEGER,
+                    "duration_minutes" to ValueKind.OPTIONAL_INTEGER, "activity_kind" to ValueKind.OPTIONAL_TEXT,
+                    "illness_impact" to ValueKind.OPTIONAL_TEXT, "symptom_codes" to ValueKind.STRINGS)))
+                "sleeps" -> put(name, schema.copy(fields = schema.fields + fields("wakeup_time" to ValueKind.OPTIONAL_TEXT, "bed_time" to ValueKind.OPTIONAL_TEXT,
+                    "quality_rating" to ValueKind.OPTIONAL_INTEGER, "quality_label" to ValueKind.OPTIONAL_TEXT, "scale_version" to ValueKind.OPTIONAL_INTEGER, "awakenings" to ValueKind.OPTIONAL_INTEGER)))
+                "stools" -> put(name, schema.copy(fields = schema.fields + fields("scale_version" to ValueKind.OPTIONAL_INTEGER, "quality_label" to ValueKind.OPTIONAL_TEXT,
+                    "urgency" to ValueKind.OPTIONAL_INTEGER, "pain" to ValueKind.OPTIONAL_INTEGER)))
+                else -> put(name, schema)
+            }
+        }
+    }
+    fun upgradeThree(record: BackupRecord): BackupRecord = when (record.type) {
+        "feelings" -> record.copy(type = "health_entries", values = (record.values - "description") + mapOf("metric" to "wellbeing", "value_code" to null,
+            "value_label" to null, "scale_version" to null, "period" to "moment", "day_slot" to null, "duration_minutes" to null,
+            "activity_kind" to null, "illness_impact" to null, "symptom_codes" to emptyList<String>(), "comment" to record.values["description"],
+            "actual_time" to null, "utc_offset" to null, "time_zone" to null, "time_precision" to "date_only"))
+        "sleeps" -> record.copy(values = record.values + mapOf("quality_rating" to null, "quality_label" to null, "scale_version" to null, "awakenings" to null))
+        "stools" -> record.copy(values = record.values + mapOf("scale_version" to if ((record.values["quality"] as Long) in 1..7) 1L else null,
+            "quality_label" to if ((record.values["quality"] as Long) in 1..7) StoolCondition.label((record.values["quality"] as Long).toInt()) else null, "urgency" to null, "pain" to null))
+        else -> record
+    }
+    fun upgradeFile(file: BackupFile): BackupFile = file.copy(records = file.records.map(::upgradeThree),
+        aliases = file.aliases.map { if (it.type == "feelings") it.copy(type = "health_entries") else it })
     fun upgradeTwo(record: BackupRecord): BackupRecord = if (record.type == "catalog") record.copy(values = record.values + ("favorite" to false)) else record
     fun upgrade(record: BackupRecord): BackupRecord {
         val defaults: Map<String, Any?> = when (record.type) {
@@ -98,7 +126,7 @@ internal object BackupSchema {
 
 object BackupCodec {
     const val APPLICATION_ID = "com.pamurlykin.nutritionassistant"
-    const val VERSION = 3
+    const val VERSION = 4
     const val MAX_BYTES = 16 * 1024 * 1024
     const val MAX_ITEMS = 100_000
 
@@ -120,9 +148,11 @@ object BackupCodec {
             val text = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString().removePrefix("\uFEFF")
             val root = JsonValues.readObject(text)
-            require(root.keys == setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases")) { "Неподдерживаемые поля JSON." }
             require(root["applicationId"] == APPLICATION_ID) { "Это резервная копия другого приложения." }
-            require(root["schemaVersion"] in setOf(1L, 2L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
+            require(root["schemaVersion"] in setOf(1L, 2L, 3L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
+            val expectedKeys = setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases") + if (root["schemaVersion"] == 4L) setOf("scales") else emptySet()
+            require(root.keys == expectedKeys) { "Неподдерживаемые поля JSON." }
+            if (root["schemaVersion"] == 4L) require(root["scales"] == HealthScales.dictionary()) { "Неизвестные определения шкал." }
             val records = root["records"].asList().map { value ->
                 val row = value.asObject()
                 require(row.keys == setOf("type", "publicId", "values")) { "Неверные поля записи." }
@@ -136,11 +166,15 @@ object BackupCodec {
             val file = BackupFile(root["appVersion"] as String, root["exportedAt"] as String, records, aliases)
             if (root["schemaVersion"] == 1L) {
                 validate(file, legacy = true)
-                return file.copy(records = file.records.map { BackupSchema.upgradeTwo(BackupSchema.upgrade(it)) }).also { validate(it) }
+                return BackupSchema.upgradeFile(file.copy(records = file.records.map { BackupSchema.upgradeTwo(BackupSchema.upgrade(it)) })).also { validate(it) }
             }
             if (root["schemaVersion"] == 2L) {
                 validate(file, versionTwo = true)
-                return file.copy(records = file.records.map(BackupSchema::upgradeTwo)).also { validate(it) }
+                return BackupSchema.upgradeFile(file.copy(records = file.records.map(BackupSchema::upgradeTwo))).also { validate(it) }
+            }
+            if (root["schemaVersion"] == 3L) {
+                validate(file, versionThree = true)
+                return BackupSchema.upgradeFile(file).also { validate(it) }
             }
             return file.also { validate(it) }
         } catch (failure: Exception) {
@@ -155,7 +189,7 @@ object BackupCodec {
         validate(file)
         val bytes = canonical(mapOf("applicationId" to APPLICATION_ID, "schemaVersion" to VERSION.toLong(),
             "appVersion" to file.appVersion, "exportedAt" to file.exportedAt, "records" to recordsValue(file.records),
-            "aliases" to aliasesValue(file.aliases))).toByteArray(Charsets.UTF_8)
+            "aliases" to aliasesValue(file.aliases), "scales" to HealthScales.dictionary())).toByteArray(Charsets.UTF_8)
         require(bytes.size <= MAX_BYTES) { "Резервная копия превышает 16 МиБ." }
         return bytes
     }
@@ -175,13 +209,14 @@ object BackupCodec {
     private fun Any?.asList(): List<*> = this as? List<*> ?: error("Expected array")
 
     @Suppress("UNCHECKED_CAST")
-    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false) {
+    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false, versionThree: Boolean = false) {
         require(file.appVersion.isNotBlank() && file.appVersion.length <= 100)
         Instant.parse(file.exportedAt)
+        val modern = !legacy && !versionTwo && !versionThree
         val byId = file.records.associateBy { it.publicId }
         require(byId.size == file.records.size && file.records.size <= MAX_ITEMS)
         require(file.records.count { it.type == "users" } == 1)
-        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else BackupSchema.tables
+        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else if (versionThree) BackupSchema.versionThree else BackupSchema.tables
         var itemCount = file.records.size.toLong() + file.aliases.size
         val dailyKeys = hashSetOf<List<Any?>>()
         val positions = hashSetOf<List<Any?>>()
@@ -218,7 +253,7 @@ object BackupCodec {
                 if (key.endsWith("_time") && value != null) { require((value as String).matches(Regex("[0-9]{2}:[0-9]{2}"))); LocalTime.parse(value) }
                 if (key in setOf("created_at", "updated_at")) { val time = LocalDateTime.parse(value as String); require(time.year in 1..9999) }
                 if (key == "name") require((value as String).isNotBlank() && value.length <= 1000)
-                if (key in setOf("dosage", "comment")) require(value == null || (value as String).length <= 1000)
+                if (key in setOf("dosage", "comment")) require(value == null || (value as String).length <= 1000 || record.type == "health_entries")
             }
             val v = record.values
             if (record.type == "catalog") {
@@ -250,11 +285,41 @@ object BackupCodec {
                     graph[record.publicId] = links.map { it["product_id"] as String }
                 }
             }
+            fun number(key: String): Int? = (v[key] as Long?)?.also { require(it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) }?.toInt()
+            if (modern && record.type == "health_entries") {
+                val metric = v["metric"] as String; val value = optional(v, "value_code"); val period = v["period"] as String
+                require(v["day_slot"] == if (period == "day") 1L else null)
+                require(metric in HealthScales.metrics && period in setOf("day", "moment"))
+                if (period == "day") require(dailyKeys.add(listOf(record.type, v["user_id"], v["date"], metric)))
+                val context = EventContext(RecordedTime(optional(v, "actual_time"), optional(v, "utc_offset"), optional(v, "time_zone")), optional(v, "comment"))
+                if (value == null) {
+                    require(metric == "wellbeing" && period == "moment" && v["scale_version"] == null && v["value_label"] == null && v["comment"] != null)
+                    require(v["duration_minutes"] == null && v["activity_kind"] == null && v["illness_impact"] == null && (v["symptom_codes"] as List<*>).isEmpty())
+                } else {
+                    HealthDraft(metric, value, period, number("duration_minutes"), optional(v, "activity_kind"), optional(v, "illness_impact"),
+                        (v["symptom_codes"] as List<*>).map { it as String }, context).validated(v["date"] as String, preserveLongComment = true)
+                    require(v["scale_version"] == 1L && v["value_label"] == HealthScales.label(metric, value))
+                }
+            }
+            if (modern && record.type == "stools") {
+                val quality = v["quality"] as Long
+                require(v["scale_version"] == if (quality == 0L) null else 1L)
+                require(v["quality_label"] == if (quality == 0L) null else StoolCondition.label(quality.toInt()))
+                StoolDetails(number("urgency"), number("pain")).validated()
+                require(quality != 0L || v["urgency"] == null && v["pain"] == null)
+            }
+            if (modern && record.type == "sleeps") {
+                val rating = number("quality_rating")
+                SleepDraft(rating, optional(v, "quality_description"), number("awakenings"), optional(v, "bed_time"), optional(v, "wakeup_time"),
+                    optional(v, "bed_date"), optional(v, "wakeup_date")).validated(v["date"] as String, allowLegacyComment = true)
+                require(v["scale_version"] == if (rating == null) null else 1L)
+                require(v["quality_label"] == rating?.let { HealthScales.label("sleep", it.toString()) })
+            }
             if (record.type == "meals") require(v["meal_type"] in setOf("breakfast", "lunch", "dinner", "snack"))
             if (record.type == "stools") require((v["quality"] as Long) in 0..7)
             if (record.type == "water") require((v["glasses_count"] as Long) in 0..Int.MAX_VALUE.toLong())
             if (record.type in setOf("water", "sleeps", "day_status")) require(dailyKeys.add(listOf(record.type, v["user_id"], v["date"])))
-            if (!legacy && record.type in setOf("meals", "medicines", "stools")) {
+            if (!legacy && record.type in setOf("meals", "medicines", "stools", "health_entries")) {
                 val time = RecordedTime(optional(v, "actual_time"), optional(v, "utc_offset"), optional(v, "time_zone")).validated(v["date"] as String)
                 require(time.precision == v["time_precision"])
             }

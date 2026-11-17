@@ -143,7 +143,7 @@ class BackupTest {
     @Test fun databaseFailureRollsBackEveryInsertedRecordAndAlias() = runBlocking {
         populate()
         val preview = targetStore.preview(BackupCodec.decode(store.export()))
-        target.openHelper.writableDatabase.execSQL("CREATE TRIGGER backup_test_failure BEFORE INSERT ON feelings BEGIN SELECT RAISE(ABORT, 'test failure'); END")
+        target.openHelper.writableDatabase.execSQL("CREATE TRIGGER backup_test_failure BEFORE INSERT ON health_entries BEGIN SELECT RAISE(ABORT, 'test failure'); END")
         val before = hash(targetStore)
         try { targetStore.apply(preview, approved); fail("Database failure must roll back") } catch (_: android.database.sqlite.SQLiteException) { }
         assertEquals(before, hash(targetStore))
@@ -154,7 +154,7 @@ class BackupTest {
         val bytes = store.export()
         val text = bytes.toString(Charsets.UTF_8)
         val unknown = JSONObject(text).put("unexpected", true).toString()
-        val wrongVersion = JSONObject(text).put("schemaVersion", 4).toString()
+        val wrongVersion = JSONObject(text).put("schemaVersion", 5).toString()
         val duplicate = text.replaceFirst("{", "{\"schemaVersion\":1,")
         val trailing = "$text {}"
         val invalidDate = text.replace(day, "2026-02-30")

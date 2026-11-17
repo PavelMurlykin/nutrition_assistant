@@ -28,9 +28,9 @@ class MigrationTest {
             execSQL("INSERT INTO stools VALUES (1,1,'2026-10-17',0,'2026-10-17T08:00:00','2026-10-17T08:00:00')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).close()
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).close()
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -58,13 +58,13 @@ class MigrationTest {
             execSQL("INSERT INTO meal_items VALUES (2,1,2,'Йогурт','store','[\"Молоко\"]')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).apply {
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).apply {
             query("SELECT COUNT(*) FROM catalog WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             query("SELECT COUNT(*) FROM meal_items WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             close()
         }
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -92,7 +92,7 @@ class MigrationTest {
             execSQL("INSERT INTO catalog VALUES (2,'product','Гречка','гречка','','[]',0)")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).use { db ->
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).use { db ->
             db.query("SELECT id, name, archived, public_id FROM catalog ORDER BY id").use { cursor ->
                 assertTrue(cursor.moveToFirst()); assertEquals(1L, cursor.getLong(0)); assertEquals("Рис", cursor.getString(1)); assertEquals(1, cursor.getInt(2))
                 val first = java.util.UUID.fromString(cursor.getString(3))
@@ -111,7 +111,7 @@ class MigrationTest {
             execSQL("INSERT INTO sleeps (id,user_id,date,wakeup_time,bed_time,quality_description,created_at,updated_at,public_id) VALUES (1,1,'2026-10-17','07:00','23:00','Просыпался','2026-10-17T08:00:00','2026-10-17T08:00:00','55555555-5555-4555-8555-555555555555')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).use { database ->
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).use { database ->
             database.query("SELECT public_id, category_code, composition_state, composition_source, revision FROM catalog").use {
                 assertTrue(it.moveToFirst()); assertEquals(product, it.getString(0)); assertTrue(it.isNull(1)); assertEquals("unknown", it.getString(2)); assertTrue(it.isNull(3)); assertEquals(1, it.getInt(4))
             }
@@ -131,11 +131,38 @@ class MigrationTest {
             execSQL("INSERT INTO catalog (id,kind,name,normalized_name,food_type,ingredients,archived,public_id,revision) VALUES (1,'product','Хлеб','хлеб','','[]',1,'11111111-1111-4111-8111-111111111111',7)")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_5_6).use { database ->
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7).use { database ->
             database.query("SELECT public_id, name, archived, revision, favorite FROM catalog").use {
                 assertTrue(it.moveToFirst()); assertEquals("11111111-1111-4111-8111-111111111111", it.getString(0)); assertEquals("Хлеб", it.getString(1)); assertEquals(1, it.getInt(2)); assertEquals(7, it.getInt(3)); assertEquals(0, it.getInt(4))
             }
         }
     }
 
+
+    @Test fun versionSixPreservesLegacyTextIdentityAndUnknownValues() {
+        helper.createDatabase("migration-test", 6).apply {
+            execSQL("INSERT INTO feelings (id,user_id,date,description,created_at,updated_at,public_id) VALUES (7,1,'2026-11-17','Неважно, но без оценки','c','u','11111111-1111-4111-8111-111111111111')")
+            execSQL("INSERT INTO sleeps (id,user_id,date,bed_time,wakeup_time,quality_description,created_at,updated_at,public_id) VALUES (8,1,'2026-11-17','23:00','07:00','Хороший сон','c','u','22222222-2222-4222-8222-222222222222')")
+            execSQL("INSERT INTO stools (id,user_id,date,quality,created_at,updated_at,public_id) VALUES (9,1,'2026-11-17',7,'c','u','33333333-3333-4333-8333-333333333333')")
+            execSQL("INSERT INTO stools (id,user_id,date,quality,created_at,updated_at,public_id) VALUES (10,1,'2026-11-17',0,'c','u','44444444-4444-4444-8444-444444444444')")
+            execSQL("INSERT INTO backup_aliases VALUES ('55555555-5555-4555-8555-555555555555','11111111-1111-4111-8111-111111111111','feelings')")
+            close()
+        }
+        helper.runMigrationsAndValidate("migration-test", 7, true, NutritionDatabase.MIGRATION_6_7).use { database ->
+            database.query("SELECT id,comment,public_id,value_code,scale_version,actual_time,period,created_at FROM health_entries").use { c ->
+                assertTrue(c.moveToFirst()); assertEquals(7,c.getInt(0)); assertEquals("Неважно, но без оценки",c.getString(1))
+                assertEquals("11111111-1111-4111-8111-111111111111",c.getString(2)); (3..5).forEach { assertTrue(c.isNull(it)) }
+                assertEquals("moment",c.getString(6)); assertEquals("c",c.getString(7))
+            }
+            database.query("SELECT bed_time,wakeup_time,quality_description,quality_rating,scale_version,bed_date FROM sleeps").use { c ->
+                assertTrue(c.moveToFirst()); assertEquals("23:00",c.getString(0)); assertEquals("07:00",c.getString(1)); assertEquals("Хороший сон",c.getString(2))
+                (3..5).forEach { assertTrue(c.isNull(it)) }
+            }
+            database.query("SELECT quality,scale_version,quality_label FROM stools ORDER BY id").use { c ->
+                assertTrue(c.moveToFirst()); assertEquals(7,c.getInt(0)); assertEquals(1,c.getInt(1)); assertFalse(c.isNull(2))
+                assertTrue(c.moveToNext()); assertEquals(0,c.getInt(0)); assertTrue(c.isNull(1)); assertTrue(c.isNull(2))
+            }
+            database.query("SELECT type FROM backup_aliases").use { c -> assertTrue(c.moveToFirst()); assertEquals("health_entries",c.getString(0)) }
+        }
+    }
 }

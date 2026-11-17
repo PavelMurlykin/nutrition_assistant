@@ -52,7 +52,7 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
             preview.value = null
             val file = try { requireNotNull(resolver.openInputStream(uri)).use(BackupCodec::read) }
             catch (_: Exception) {
-                message.value = "Файл не прочитан: нужен корректный JSON Nutrition Assistant версии 1–3, UTF-8, до 16 МиБ и 100 000 объектов. База не изменена."
+                message.value = "Файл не прочитан: нужен корректный JSON Nutrition Assistant версии 1–4, UTF-8, до 16 МиБ и 100 000 объектов. База не изменена."
                 return@run
             }
             preview.value = container.backupStore.preview(file)

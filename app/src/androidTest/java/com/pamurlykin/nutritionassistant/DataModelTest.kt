@@ -113,7 +113,7 @@ class DataModelTest {
         repository.confirmDay(1, day, true, true, "diarrhea")
         repository.upsertSleep(1, day, "07:00", "23:00", "Просыпался")
         assertEquals("2026-11-16", daily().sleep?.bedDate); assertEquals(day, daily().sleep?.wakeupDate)
-        assertTrue(requireNotNull(daily().dayStatus).symptomsComplete)
+        assertFalse(requireNotNull(daily().dayStatus).symptomsComplete)
     }
 
     @Test fun jsonTwoRoundTripRestoresNestedCatalogHistoricalTreeTimesAndCompleteness() = runBlocking {
@@ -123,11 +123,11 @@ class DataModelTest {
         val medicine = repository.saveCatalogEntry(null, "medicine", "JSON лекарство", "", emptyList())
         repository.saveMedicines(day, null, listOf(MedicineSelection(medicine.id, "1 таблетка", Portion("1", "piece"), "После еды", true)), EventContext(RecordedTime("10:00", "+03:00")))
         repository.addStool(1, day, 3)
-        repository.confirmDay(1, day, true, true, "no_diarrhea")
         repository.upsertSleep(1, day, "07:00", "22:30", "Хорошо")
+        repository.confirmDay(1, day, true, true, "no_diarrhea")
         repository.archiveCatalogEntry(garlic.id)
         val bytes = hash().export()
-        assertEquals(3, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
+        assertEquals(4, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
         val target = newDatabase()
         try {
             val targetRepo = NutritionRepository(target); targetRepo.initialize()

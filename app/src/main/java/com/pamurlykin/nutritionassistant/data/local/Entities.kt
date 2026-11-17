@@ -1,6 +1,7 @@
 package com.pamurlykin.nutritionassistant.data.local
 
 import androidx.room.ColumnInfo
+import androidx.room.Ignore
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -112,26 +113,37 @@ data class StoolEntity(
     @ColumnInfo(name = "time_zone", defaultValue = "NULL") val timeZone: String? = null,
     @ColumnInfo(name = "time_precision", defaultValue = "'date_only'") val timePrecision: String = "date_only",
     @ColumnInfo(defaultValue = "NULL") val comment: String? = null,
+    @ColumnInfo(name = "scale_version", defaultValue = "NULL") val scaleVersion: Int? = null,
+    @ColumnInfo(name = "quality_label", defaultValue = "NULL") val qualityLabel: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val urgency: Int? = null,
+    @ColumnInfo(defaultValue = "NULL") val pain: Int? = null,
 )
 
-@Entity(
-    tableName = "feelings",
-    indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true)],
-)
-data class FeelingEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    @ColumnInfo(name = "user_id")
-    val userId: Long,
-    val date: String,
-    val description: String,
-    @ColumnInfo(name = "created_at")
-    val createdAt: String = StorageFormats.nowTimestamp(),
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: String = StorageFormats.nowTimestamp(),
-    @ColumnInfo(name = "public_id", defaultValue = "''")
-    val publicId: String = java.util.UUID.randomUUID().toString(),
-)
+@Entity(tableName = "health_entries", indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true),
+    Index(value = ["user_id", "date", "metric", "day_slot"], unique = true)])
+data class HealthEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "user_id") val userId: Long, val date: String,
+    val metric: String = "wellbeing",
+    @ColumnInfo(name = "value_code") val valueCode: String? = null,
+    @ColumnInfo(name = "value_label") val valueLabel: String? = null,
+    @ColumnInfo(name = "scale_version") val scaleVersion: Int? = null,
+    val period: String = "moment",
+    @ColumnInfo(name = "day_slot") val daySlot: Int? = null,
+    @ColumnInfo(name = "duration_minutes") val durationMinutes: Int? = null,
+    @ColumnInfo(name = "activity_kind") val activityKind: String? = null,
+    @ColumnInfo(name = "illness_impact") val illnessImpact: String? = null,
+    @ColumnInfo(name = "symptom_codes") val symptomCodes: List<String> = emptyList(),
+    val comment: String? = null,
+    @ColumnInfo(name = "actual_time") val actualTime: String? = null,
+    @ColumnInfo(name = "utc_offset") val utcOffset: String? = null,
+    @ColumnInfo(name = "time_zone") val timeZone: String? = null,
+    @ColumnInfo(name = "time_precision") val timePrecision: String = "date_only",
+    @ColumnInfo(name = "created_at") val createdAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "updated_at") val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id") val publicId: String = java.util.UUID.randomUUID().toString(),
+) { @get:Ignore val description: String get() = comment.orEmpty() }
+typealias FeelingEntity = HealthEntryEntity
 
 @Entity(
     tableName = "water",
@@ -164,9 +176,9 @@ data class SleepEntity(
     val userId: Long,
     val date: String,
     @ColumnInfo(name = "wakeup_time")
-    val wakeupTime: String,
+    val wakeupTime: String? = null,
     @ColumnInfo(name = "bed_time")
-    val bedTime: String,
+    val bedTime: String? = null,
     @ColumnInfo(name = "quality_description")
     val qualityDescription: String? = null,
     @ColumnInfo(name = "created_at")
@@ -177,6 +189,10 @@ data class SleepEntity(
     val publicId: String = java.util.UUID.randomUUID().toString(),
     @ColumnInfo(name = "bed_date", defaultValue = "NULL") val bedDate: String? = null,
     @ColumnInfo(name = "wakeup_date", defaultValue = "NULL") val wakeupDate: String? = null,
+    @ColumnInfo(name = "quality_rating", defaultValue = "NULL") val qualityRating: Int? = null,
+    @ColumnInfo(name = "quality_label", defaultValue = "NULL") val qualityLabel: String? = null,
+    @ColumnInfo(name = "scale_version", defaultValue = "NULL") val scaleVersion: Int? = null,
+    @ColumnInfo(defaultValue = "NULL") val awakenings: Int? = null,
 )
 
 @Entity(tableName = "day_status", indices = [Index(value = ["user_id", "date"], unique = true), Index(value = ["public_id"], unique = true)])

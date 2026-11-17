@@ -30,7 +30,7 @@ The app opens «Календарь» (Calendar) with today's diary. The bottom t
 
 ## Consistent interface and forms
 
-In version 0.6.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+In version 0.9.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
 
 The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
 
@@ -65,7 +65,7 @@ Tap «Добавить прием» (Add intake) and search by part of a medicin
 
 ### Stool
 
-In «Туалет» (Toilet), select Bristol stool type 1–7. Types 1–2 are labeled constipation signs, 6–7 loose stool/diarrhea, 3–4 formed stool, and 5 soft stool. These are diary categories rather than diagnoses. Existing type-0 entries remain unassessed; new type-0 entries are not allowed.
+In «Туалет» (Toilet), select Bristol stool type 1–7. Types 1–2 are labeled constipation signs, 6–7 loose stool/diarrhea, 3–4 formed stool, and 5 soft stool. These are diary categories rather than diagnoses. Urgency 0–2, pain 0–3, actual time, and a comment are optional; auxiliary scales have a Missing choice. Existing type-0 entries remain unassessed; new type-0 entries are not allowed.
 
 After saving type 1–2 or 6–7, «Аналитика стула» (Stool analysis) updates automatically. It shows food from the previous calendar day relative to the event date, including snacks. For an October 18 record, this means October 17, rather than a rolling 24-hour window.
 
@@ -75,9 +75,33 @@ Comparisons include only days with assessed stool records and food recorded on t
 
 An association does not establish a cause. “Without exposure” means the factor was not recorded on the preceding day; results depend on diary completeness. Medication, infections, water, sleep, and wellbeing effects are not modeled. The algorithm gives no diagnoses, treatment advice, or recommendations to eliminate foods.
 
-### Sleep, wellbeing, and water
+### Daily state and separate observations
 
-Enter sleep manually with wake-up on the selected day and a free-text quality description. For a new record, bedtime earlier than wake-up belongs to the same day; a later or equal bedtime belongs to the previous day. The specific night dates are stored; time in bed is not treated as actual sleep duration. Legacy records retain unknown night dates. The initial 23:00 and 07:00 values are form defaults only; nothing is recorded until saved. Wellbeing uses free text. Water supports −1, +1, and an exact glass count; negative values are disallowed.
+Tap «+» → «Состояние за день» (Daily state) or «Заполнить день» (Fill day). Choose up to five measures and tap «Сохранить день» (Save day). No text is required; optional comments expand separately. Every measure initially says Not filled; saving an empty form does not create healthy scores.
+
+| Measure | Choices |
+| --- | --- |
+| Sleep quality | 1 — very poor … 5 — very good |
+| Stress | 0 — absent … 4 — very high |
+| Activity | None / light / moderate / vigorous |
+| Wellbeing | 1 — very poor … 5 — very good |
+| Illness signs | None / present / unknown |
+
+These are the diary's own version-1 self-report scales with no claimed medical validation. Missing differs from zero, no activity/signs, and Unknown. Clearing a daily stress, activity, wellbeing, or illness rating removes its comment. The sleep comment is cleared separately. Activity can include kind and minutes (1–1440); present illness can include impact on usual activities and symptom categories. No diagnosis is required. Choosing no activity or absent/unknown illness clears hidden dependent details.
+
+«+» → «Отдельное наблюдение» (Separate observation), or Add observation, lets you choose a measure and Whole day or Separate moment. There is one daily rating per measure and any number of moments. Open an existing entry to edit or delete it. Activity events show maximum reported intensity, sum of known minutes, and count of events with unknown duration; these never replace the daily rating. Different scales are not combined into an index.
+
+### Actual time and day completeness
+
+Food, medication, stool, and moment observations offer «Указать фактическое время» (Specify actual time). It remains unknown until explicitly selected and is never inferred from creation time. Check the UTC offset and optional IANA timezone, such as Europe/Moscow. Repeated daylight-saving times need an explicit offset choice; nonexistent local times cannot be saved. Time unknown clears the time and zone. Whole-day ratings have no precise clock time.
+
+Check day completeness independently confirms all food and all observations/symptoms. Symptoms require an explicit outcome: no loose stool; type 6–7 occurred (record the episode first); or no stool. It is checked against recorded stools. No loose stool is the user's own report, not a diagnosis. An empty day is never automatically confirmed. Food changes clear food confirmation; stool, health, sleep, or medication changes clear symptom confirmation. Confirm again after editing. Current analysis does not yet use these new scales, times, or confirmations; that extension is scheduled separately.
+
+### Sleep and water
+
+In Sleep, tap Edit. Quality 1–5 can be saved without times; awakenings (0–1000) and a comment are optional. Zero awakenings differs from an unknown count. Record time in bed reveals both boundaries: check bedtime date, bedtime, and wake-up time; wake-up date is the selected day. Enabling a new night suggests the previous date and 23:00–07:00, applied only after saving. Wake-up must follow bedtime. The interval uses local wall clocks and is not measured sleep duration, especially across clock changes. Legacy times without dates retain unknown dates until clarified. The quick day form changes only the rating/comment, preserving the existing interval and awakenings. Clearing all sleep details in the sleep editor deletes the record.
+
+Legacy wellbeing text appears as an unrated moment; old sleep descriptions remain comments. No scores are guessed; text and UUIDs survive updates and JSON. New comments are limited to 1000 characters; an unchanged longer legacy comment can be retained. Water supports −1, +1, and an exact glass count; negative values are disallowed.
 
 ## Menu: catalogs and composition
 
@@ -107,9 +131,9 @@ Ordinary catalog or event-comment edits preserve logged food composition. Update
 
 «+» → Repeat recent meal lists the last 10 meals. Review composition, portions, and the selected date, remove items, or explicitly refresh their compositions. Historical compositions and portions are retained by default; the event and its items receive new UUIDs, leaving the source unchanged. The old actual time is not copied. Archived items are marked for review.
 
-Actual-time, health-scale, and day-completeness forms are scheduled for stage 6. Ordinary edits preserve already recorded times and additional details. Completeness defaults to absent and is not yet used by current analysis. Food changes invalidate food confirmation; stool or wellbeing changes invalidate symptom confirmation.
+Actual-time, scale, and completeness forms are available as described above.
 
-Export creates JSON 3; import reads JSON 1–3. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
+Export creates JSON 4; import reads JSON 1–4. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
 
 ## Reminders and permission
 
@@ -135,7 +159,7 @@ No additional storage permission is needed. A copy outside the local database ca
 
 ### Import
 
-1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, or 3 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
+1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, 3, or 4 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
 2. Review «Проверка импорта» (Import preview): object counts, additions, matches, and conflicts. History merges into the current personal diary; the database is not cleared.
 3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local metadata, composition, favorites, and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. Transfer matching also includes basic product/variant, brand, and variant label. If this combination is ambiguous in either catalog, entries remain separate without name-based merging.
 4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water, sleep, and day-completeness records on the same date also remain; importing new observations invalidates the corresponding previous confirmation. Long lists show the first 100 details of each kind and the total count.
@@ -150,7 +174,7 @@ The preview and prepared backup survive screen recreation within the current pro
 
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 preserve events and reminder settings. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 → 7 preserve events and reminder settings. Schema 7 moves old state text into comments without guessing scores, makes sleep times optional, and adds scales with versions. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
 
 Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 

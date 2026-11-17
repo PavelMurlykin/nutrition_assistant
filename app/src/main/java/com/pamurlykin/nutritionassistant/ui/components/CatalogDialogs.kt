@@ -161,7 +161,8 @@ private val SelectedItemsSaver = listSaver<List<SelectedCatalogItem>, String>(
 fun CatalogEventDialog(
     title: String, kind: String, initial: List<SelectedCatalogItem>, entries: List<CatalogItem>, busy: Boolean,
     onDismiss: () -> Unit, onCreate: (CatalogDraft, (CatalogItem) -> Unit) -> Unit,
-    onSave: (List<SelectedCatalogItem>, String) -> Unit, initialComment: String = "",
+    onSave: (List<SelectedCatalogItem>, String, RecordedTime) -> Unit, initialComment: String = "",
+    date: String = java.time.LocalDate.now().toString(), initialTime: RecordedTime = RecordedTime(),
     recentIds: List<Long> = emptyList(), onFavorite: (Long, Boolean) -> Unit = { _, _ -> }, repeating: Boolean = false,
 ) {
     var selected by rememberSaveable(stateSaver = SelectedItemsSaver) { mutableStateOf(initial) }
@@ -178,6 +179,7 @@ fun CatalogEventDialog(
     var refreshingId by rememberSaveable { mutableStateOf<Long?>(null) }
     var commentOpen by rememberSaveable { mutableStateOf(false) }
     var comment by rememberSaveable { mutableStateOf(initialComment) }
+    var eventTime by rememberSaveable(stateSaver = RecordedTimeSaver) { mutableStateOf(initialTime) }
     val isDish = kind == CatalogKind.DISH
     fun current(id: Long) = runCatching { CompositionSnapshot.encode(catalogSnapshot(id, entries)) }.getOrNull()
     fun selectedEntry(entry: CatalogItem): SelectedCatalogItem {
@@ -212,12 +214,14 @@ fun CatalogEventDialog(
         (quick != "favorite" || it.entry.favorite) && (quick != "recent" || it.id in recentIds) && it.matches(query, entries, searchIngredients) }
         .let { if (quick == "recent") it.sortedBy { entry -> recentIds.indexOf(entry.id) } else it }
     fun changed(items: List<SelectedCatalogItem>) = items.map { it.copy(ingredients = emptyList(), snapshot = null) }
-    val valid = selected.isNotEmpty() && selected.all { (!isDish || initial.any { old -> old.id == it.id } || it.expectedHash != null) && it.dosage.length <= 1000 && it.comment.length <= 1000 && runCatching { Portion(it.quantity.takeIf(String::isNotBlank), it.unit).validated() }.isSuccess } && comment.length <= 1000
+    val valid = selected.isNotEmpty() && selected.all { (!isDish || initial.any { old -> old.id == it.id } || it.expectedHash != null) && it.dosage.length <= 1000 && it.comment.length <= 1000 && runCatching { Portion(it.quantity.takeIf(String::isNotBlank), it.unit).validated() }.isSuccess } && comment.length <= 1000 && runCatching { eventTime.validated(date) }.isSuccess
     AppDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(title) }, busy = busy,
-        hasChanges = changed(selected) != changed(initial) || comment != initialComment,
+        hasChanges = changed(selected) != changed(initial) || comment != initialComment || eventTime != initialTime,
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Выбрано: " + selected.size, style = MaterialTheme.typography.titleMedium)
+                Text(date, style = MaterialTheme.typography.bodySmall)
+                RecordedTimeEditor(date, eventTime, !busy) { eventTime = it }
                 if (repeating) Text("Новый приём на выбранную дату. Проверьте порции. Записанный состав сохранится; «Обновить состав» заменяет только выбранную позицию.")
                 selected.forEach { item ->
                     Column {
@@ -271,7 +275,7 @@ fun CatalogEventDialog(
                 Text("Событие может включать несколько " + if (isDish) "блюд и продуктов." else "лекарств.")
                 Text("Созданные записи справочника остаются в нём даже при отмене события.", style = MaterialTheme.typography.bodySmall)
             }
-        }, confirmButton = { TextButton(enabled = valid && !busy, onClick = { onSave(selected, comment) }) { Text("Сохранить событие") } }, dismissButton = { AppDismissButton(enabled = !busy) })
+        }, confirmButton = { TextButton(enabled = valid && !busy, onClick = { onSave(selected, comment, eventTime) }) { Text("Сохранить событие") } }, dismissButton = { AppDismissButton(enabled = !busy) })
     viewingId?.let { id -> CompositionDialog(if (viewingHistory) historical(id) else current(id), initial.find { it.id == id }?.ingredients.orEmpty()) { viewingId = null } }
     refreshingId?.let { id ->
         val now = current(id)

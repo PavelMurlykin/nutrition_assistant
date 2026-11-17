@@ -102,19 +102,24 @@ interface StoolDao {
 @Dao
 interface FeelingDao {
     @Insert
-    suspend fun insert(feeling: FeelingEntity): Long
+    suspend fun insert(feeling: HealthEntryEntity): Long
 
     @Update
-    suspend fun update(feeling: FeelingEntity)
+    suspend fun update(feeling: HealthEntryEntity)
 
-    @Query("DELETE FROM feelings WHERE id = :feelingId AND user_id = :userId")
+    @Query("DELETE FROM health_entries WHERE id = :feelingId AND user_id = :userId")
     suspend fun deleteById(userId: Long, feelingId: Long)
 
-    @Query("SELECT * FROM feelings WHERE id = :feelingId LIMIT 1")
-    suspend fun getById(feelingId: Long): FeelingEntity?
+    @Query("SELECT * FROM health_entries WHERE id = :feelingId LIMIT 1")
+    suspend fun getById(feelingId: Long): HealthEntryEntity?
 
-    @Query("SELECT * FROM feelings WHERE user_id = :userId AND date = :date ORDER BY created_at")
-    fun observeForDay(userId: Long, date: String): Flow<List<FeelingEntity>>
+    @Query("SELECT * FROM health_entries WHERE user_id = :userId AND date = :date ORDER BY created_at")
+    fun observeForDay(userId: Long, date: String): Flow<List<HealthEntryEntity>>
+    @Query("SELECT * FROM health_entries WHERE user_id = :userId AND date = :date AND metric = :metric AND day_slot = 1")
+    suspend fun daily(userId: Long, date: String, metric: String): HealthEntryEntity?
+    @Query("DELETE FROM health_entries WHERE user_id = :userId AND date = :date AND metric = :metric AND day_slot = 1")
+    suspend fun clearDaily(userId: Long, date: String, metric: String)
+
 }
 
 @Dao
