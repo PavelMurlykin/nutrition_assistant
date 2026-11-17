@@ -22,6 +22,7 @@ data class CatalogEntryEntity(
     @ColumnInfo(name = "composition_checked_on", defaultValue = "NULL") val compositionCheckedOn: String? = null,
     @ColumnInfo(defaultValue = "NULL") val comment: String? = null,
     @ColumnInfo(defaultValue = "1") val revision: Int = 1,
+    @ColumnInfo(defaultValue = "0") val favorite: Boolean = false,
 )
 
 @Entity(tableName = "dish_products", primaryKeys = ["dish_id", "product_id"], foreignKeys = [
@@ -56,6 +57,8 @@ data class CatalogItem(
     @Relation(parentColumn = "id", entityColumn = "id", associateBy = Junction(
         value = ProductComponentEntity::class, parentColumn = "owner_id", entityColumn = "product_id"))
     val productComponents: List<CatalogEntryEntity> = emptyList(),
+    @Relation(parentColumn = "id", entityColumn = "dish_id") val dishLinks: List<DishProductEntity> = emptyList(),
+    @Relation(parentColumn = "id", entityColumn = "owner_id") val componentLinks: List<ProductComponentEntity> = emptyList(),
 ) {
     val id get() = entry.id
     val kind get() = entry.kind

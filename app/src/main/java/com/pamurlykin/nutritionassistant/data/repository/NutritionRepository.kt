@@ -5,6 +5,8 @@ import com.pamurlykin.nutritionassistant.data.local.*
 import com.pamurlykin.nutritionassistant.data.model.*
 import com.pamurlykin.nutritionassistant.util.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class NutritionRepository(private val database: NutritionDatabase) {
     private val users = database.userDao()
@@ -17,14 +19,36 @@ class NutritionRepository(private val database: NutritionDatabase) {
     private val catalog = database.catalogDao()
     private val dayStatus = database.dayStatusDao()
     val foodCatalog = FoodCatalog(database)
+    private val initialization = Mutex()
+    private var catalogInitialized = false
 
     suspend fun ensureUser(userId: Long = LocalUserDefaults.USER_ID) {
         users.insert(UserEntity(userId = userId))
     }
 
-    suspend fun initialize() = database.withTransaction {
-        ensureUser()
-        if (catalog.count() == 0) {
+    suspend fun initialize() = initialization.withLock {
+        database.withTransaction {
+            ensureUser()
+            if (!catalogInitialized) initializeCatalog()
+            // Preserve old free-text records as one catalog item; never guess their type or ingredients.
+            meals.withoutItems().forEach { event ->
+                val entry = legacyEntry(CatalogKind.DISH, event.description.ifBlank { "Старая запись еды" }, "unknown")
+                catalog.insertMealItems(listOf(MealItemEntity(mealId = event.id, catalogId = entry.id,
+                    name = entry.name, foodType = entry.foodType, ingredients = emptyList())))
+            }
+            medicines.withoutItems().forEach { event ->
+                val entry = legacyEntry(CatalogKind.MEDICINE, event.name.ifBlank { "Старая запись лекарства" }, "")
+                catalog.insertMedicineItems(listOf(MedicineItemEntity(medicineId = event.id, catalogId = entry.id,
+                    name = entry.name, dosage = event.dosage)))
+            }
+        }
+        catalogInitialized = true
+    }
+
+    private suspend fun initializeCatalog() {
+        val newCatalog = catalog.count() == 0
+        BuiltinCatalog.install(database)
+        if (newCatalog) {
             listOf("Йогурт", "Творог", "Хлеб", "Готовый сэндвич").forEach { product(it) }
             listOf(
                 Triple("Овсяная каша", FoodType.HOME, listOf("Овсяные хлопья", "Вода")),
@@ -37,20 +61,11 @@ class NutritionRepository(private val database: NutritionDatabase) {
                 Triple("Салат", FoodType.RESTAURANT, emptyList()),
             ).forEach { (name, type, ingredients) ->
                 val id = catalog.insert(CatalogEntryEntity(kind = CatalogKind.DISH, name = name,
-                    normalizedName = normalizeName(name), foodType = type.storageValue))
+                    normalizedName = normalizeName(name), foodType = type.storageValue,
+                    publicId = builtinId("dish:" + when (name) { "Овсяная каша" -> "oat_porridge"; "Омлет" -> "omelet"; "Гречка с курицей" -> "buckwheat_chicken"; "Овощной салат" -> "vegetable_salad"; "Суп" -> "soup"; "Пицца" -> "pizza"; "Паста" -> "pasta"; else -> "salad" }), compositionState = if (ingredients.isEmpty()) "unknown" else "partial",
+                    comment = "Шаблон рецепта: проверьте продукты и количества для своего блюда."))
                 catalog.insertProducts(ingredients.mapIndexed { position, name -> DishProductEntity(id, product(name).id, position = position) })
             }
-        }
-        // Preserve old free-text records as one catalog item; never guess their type or ingredients.
-        meals.withoutItems().forEach { event ->
-            val entry = legacyEntry(CatalogKind.DISH, event.description.ifBlank { "Старая запись еды" }, "unknown")
-            catalog.insertMealItems(listOf(MealItemEntity(mealId = event.id, catalogId = entry.id,
-                name = entry.name, foodType = entry.foodType, ingredients = emptyList())))
-        }
-        medicines.withoutItems().forEach { event ->
-            val entry = legacyEntry(CatalogKind.MEDICINE, event.name.ifBlank { "Старая запись лекарства" }, "")
-            catalog.insertMedicineItems(listOf(MedicineItemEntity(medicineId = event.id, catalogId = entry.id,
-                name = entry.name, dosage = event.dosage)))
         }
     }
 
@@ -81,6 +96,16 @@ class NutritionRepository(private val database: NutritionDatabase) {
         emitAll(catalog.observeEntries())
     }
 
+    fun observeCatalogGraph(): Flow<List<CatalogItem>> = flow { initialize(); emitAll(catalog.observeAllItems()) }
+    fun observeSeedConflicts(): Flow<List<SeedConflict>> = flow {
+        initialize()
+        emitAll(combine(catalog.observeAllItems(), catalog.observeAliases()) { entries, aliases -> BuiltinCatalog.pending(entries, aliases) })
+    }
+    suspend fun resolveSeed(key: String, targetId: Long?) = BuiltinCatalog.resolve(database, key, targetId)
+    suspend fun setFavorite(id: Long, value: Boolean) = catalog.setFavorite(id, value)
+    fun observeRecentCatalogIds() = catalog.observeRecentIds()
+    fun observeRecentMeals() = catalog.observeRecentMeals()
+
     suspend fun saveCatalogEntry(id: Long?, kind: String, name: String, type: String, productIds: List<Long>): CatalogItem =
         foodCatalog.saveBasic(id, kind, name, type, productIds)
 
@@ -88,6 +113,11 @@ class NutritionRepository(private val database: NutritionDatabase) {
         val old = requireNotNull(catalog.get(id))
         require(old.revision < Int.MAX_VALUE) { "Нельзя увеличить версию записи." }
         catalog.archive(id)
+    }
+
+    suspend fun restoreCatalogEntry(id: Long) = database.withTransaction {
+        val old = requireNotNull(catalog.get(id)); require(old.revision < Int.MAX_VALUE)
+        catalog.update(old.copy(archived = false, revision = old.revision + 1))
     }
 
     fun observeCalendarCounts(start: String, end: String): Flow<List<CalendarDayCounts>> = flow {
@@ -135,16 +165,25 @@ class NutritionRepository(private val database: NutritionDatabase) {
 
     suspend fun saveMeal(date: String, type: MealType, id: Long?, catalogIds: List<Long>,
                          context: EventContext? = null, portions: Map<Long, Portion> = emptyMap(),
-                         comments: Map<Long, String?> = emptyMap(), refreshComposition: Set<Long> = emptySet()) = database.withTransaction {
+                         comments: Map<Long, String?> = emptyMap(), refreshComposition: Set<Long> = emptySet(),
+                         sourceMealId: Long? = null, expectedCompositionHashes: Map<Long, String> = emptyMap()) = database.withTransaction {
         validateDay(date)
         require(catalogIds.isNotEmpty()) { "Выберите хотя бы одно блюдо или продукт." }
         val ids = catalogIds.distinct()
         require((portions.keys + comments.keys + refreshComposition).all { it in ids })
         val existing = id?.let { requireNotNull(meals.getById(it)) }
         if (existing != null) require(existing.userId == LocalUserDefaults.USER_ID && existing.date == date)
-        val oldItems = existing?.let { catalog.mealItems(it.id) }.orEmpty()
+        require(id == null || sourceMealId == null)
+        val source = sourceMealId?.let { requireNotNull(meals.getById(it)) }
+        require(source == null || source.userId == LocalUserDefaults.USER_ID)
+        val oldItems = existing?.let { catalog.mealItems(it.id) } ?: source?.let { sourceEvent ->
+            catalog.mealItems(sourceEvent.id).map { it.copy(id = 0, publicId = java.util.UUID.randomUUID().toString()) }
+        }.orEmpty()
         val toCapture = ids.filter { selected -> oldItems.none { it.catalogId == selected } || selected in refreshComposition }
         val snapshots = foodCatalog.snapshots(toCapture)
+        toCapture.forEach { key -> expectedCompositionHashes[key]?.let { expected ->
+            require(expected == compositionFingerprint(CompositionSnapshot.encode(snapshots.getValue(key)))) { "Состав изменился после выбора. Обновите позицию и проверьте её заново." }
+        } }
         val selected = ids.map { catalogId ->
             val old = oldItems.find { it.catalogId == catalogId }
             val item = if (old != null && catalogId !in refreshComposition) old.copy(id = 0) else {

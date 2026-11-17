@@ -14,8 +14,8 @@ android {
         applicationId = "com.pamurlykin.nutritionassistant"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.7.0"
+        versionCode = 9
+        versionName = "0.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

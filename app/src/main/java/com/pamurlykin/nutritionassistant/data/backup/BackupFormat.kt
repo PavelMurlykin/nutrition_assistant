@@ -58,7 +58,7 @@ internal object BackupSchema {
         "brand" to ValueKind.TEXT, "variant_label" to ValueKind.TEXT, "composition_state" to ValueKind.TEXT,
         "composition_source" to ValueKind.OPTIONAL_TEXT, "composition_checked_on" to ValueKind.OPTIONAL_TEXT,
         "comment" to ValueKind.OPTIONAL_TEXT, "revision" to ValueKind.INTEGER)
-    val tables = linkedMapOf<String, BackupTable>().apply {
+    val versionTwo = linkedMapOf<String, BackupTable>().apply {
         versionOne.forEach { (table, schema) ->
             val extra = when (table) {
                 "catalog" -> catalogMetadata + fields("component_links" to ValueKind.COMPONENTS)
@@ -73,6 +73,8 @@ internal object BackupSchema {
         put("day_status", BackupTable(fields = event + fields("food_complete" to ValueKind.BOOLEAN,
             "symptoms_complete" to ValueKind.BOOLEAN, "stool_summary" to ValueKind.OPTIONAL_TEXT) + times))
     }
+    val tables = versionTwo.mapValues { (name, table) -> if (name == "catalog") table.copy(fields = table.fields + ("favorite" to ValueKind.BOOLEAN)) else table }
+    fun upgradeTwo(record: BackupRecord): BackupRecord = if (record.type == "catalog") record.copy(values = record.values + ("favorite" to false)) else record
     fun upgrade(record: BackupRecord): BackupRecord {
         val defaults: Map<String, Any?> = when (record.type) {
             "catalog" -> mapOf("category_code" to null, "product_kind" to "basic", "brand" to "", "variant_label" to "",
@@ -96,7 +98,7 @@ internal object BackupSchema {
 
 object BackupCodec {
     const val APPLICATION_ID = "com.pamurlykin.nutritionassistant"
-    const val VERSION = 2
+    const val VERSION = 3
     const val MAX_BYTES = 16 * 1024 * 1024
     const val MAX_ITEMS = 100_000
 
@@ -120,7 +122,7 @@ object BackupCodec {
             val root = JsonValues.readObject(text)
             require(root.keys == setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases")) { "Неподдерживаемые поля JSON." }
             require(root["applicationId"] == APPLICATION_ID) { "Это резервная копия другого приложения." }
-            require(root["schemaVersion"] in setOf(1L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
+            require(root["schemaVersion"] in setOf(1L, 2L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
             val records = root["records"].asList().map { value ->
                 val row = value.asObject()
                 require(row.keys == setOf("type", "publicId", "values")) { "Неверные поля записи." }
@@ -134,7 +136,11 @@ object BackupCodec {
             val file = BackupFile(root["appVersion"] as String, root["exportedAt"] as String, records, aliases)
             if (root["schemaVersion"] == 1L) {
                 validate(file, legacy = true)
-                return file.copy(records = file.records.map(BackupSchema::upgrade)).also { validate(it) }
+                return file.copy(records = file.records.map { BackupSchema.upgradeTwo(BackupSchema.upgrade(it)) }).also { validate(it) }
+            }
+            if (root["schemaVersion"] == 2L) {
+                validate(file, versionTwo = true)
+                return file.copy(records = file.records.map(BackupSchema::upgradeTwo)).also { validate(it) }
             }
             return file.also { validate(it) }
         } catch (failure: Exception) {
@@ -169,13 +175,13 @@ object BackupCodec {
     private fun Any?.asList(): List<*> = this as? List<*> ?: error("Expected array")
 
     @Suppress("UNCHECKED_CAST")
-    fun validate(file: BackupFile, legacy: Boolean = false) {
+    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false) {
         require(file.appVersion.isNotBlank() && file.appVersion.length <= 100)
         Instant.parse(file.exportedAt)
         val byId = file.records.associateBy { it.publicId }
         require(byId.size == file.records.size && file.records.size <= MAX_ITEMS)
         require(file.records.count { it.type == "users" } == 1)
-        val tables = if (legacy) BackupSchema.versionOne else BackupSchema.tables
+        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else BackupSchema.tables
         var itemCount = file.records.size.toLong() + file.aliases.size
         val dailyKeys = hashSetOf<List<Any?>>()
         val positions = hashSetOf<List<Any?>>()

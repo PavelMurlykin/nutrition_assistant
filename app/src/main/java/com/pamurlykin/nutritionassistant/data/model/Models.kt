@@ -32,7 +32,7 @@ enum class ScheduleSlot(val title: String) {
 object CatalogKind { const val DISH = "dish"; const val PRODUCT = "product"; const val MEDICINE = "medicine" }
 fun normalizeName(value: String): String = value.trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT).replace('ё', 'е')
 fun catalogMatches(entry: CatalogEntryEntity, query: String): Boolean =
-    normalizeName(entry.name).contains(normalizeName(query))
+    normalizeName(listOf(entry.name, entry.brand, entry.variantLabel).joinToString(" ")).contains(normalizeName(query))
 fun catalogMatches(entry: CatalogItem, query: String): Boolean = catalogMatches(entry.entry, query)
 fun foodItemTypeTitle(kind: String, foodType: String): String =
     if (kind == CatalogKind.PRODUCT) "Продукт" else FoodType.titleFor(foodType)

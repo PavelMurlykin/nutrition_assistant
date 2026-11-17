@@ -127,7 +127,7 @@ class DataModelTest {
         repository.upsertSleep(1, day, "07:00", "22:30", "Хорошо")
         repository.archiveCatalogEntry(garlic.id)
         val bytes = hash().export()
-        assertEquals(2, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
+        assertEquals(3, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
         val target = newDatabase()
         try {
             val targetRepo = NutritionRepository(target); targetRepo.initialize()

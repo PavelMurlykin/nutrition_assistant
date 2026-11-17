@@ -27,6 +27,8 @@ class BackupWorkflowTest {
         source = Room.inMemoryDatabaseBuilder(context, NutritionDatabase::class.java).build()
         target = Room.inMemoryDatabaseBuilder(context, NutritionDatabase::class.java).build()
         NutritionRepository(source).initialize(); NutritionRepository(target).initialize()
+        NutritionRepository(source).saveCatalogEntry(null, "product", "Совпадение импорта", "", emptyList())
+        NutritionRepository(target).saveCatalogEntry(null, "product", "Совпадение импорта", "", emptyList())
         NutritionRepository(source).addFeeling(1, "2026-11-17", "Комментарий для переноса")
         store = BackupStore(target, "test")
         before = BackupCodec.fingerprint(store.snapshot())

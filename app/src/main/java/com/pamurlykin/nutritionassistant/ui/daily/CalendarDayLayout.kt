@@ -31,6 +31,7 @@ internal fun CalendarDayLayout(
     onDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
     onAdd: () -> Unit,
+    addEnabled: Boolean = true,
     content: LazyListScope.() -> Unit,
 ) {
     val list = rememberLazyListState()
@@ -84,7 +85,7 @@ internal fun CalendarDayLayout(
                 }
             }
         }
-        if (!busy) FloatingActionButton(onClick = onAdd, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        if (!busy && addEnabled) FloatingActionButton(onClick = onAdd, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add, "Добавить запись", tint = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }

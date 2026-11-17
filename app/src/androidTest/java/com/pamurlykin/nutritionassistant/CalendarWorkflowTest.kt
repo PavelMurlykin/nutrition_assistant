@@ -6,6 +6,7 @@ import android.content.pm.ActivityInfo
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -64,7 +65,14 @@ class CalendarWorkflowTest {
         compose.onNodeWithText("Сегодня").performClick()
         val today = LocalDate.now()
         val tag = "calendar-day-$today"
+        val repo = (compose.activity.application as NutritionAssistantApplication).container.repository
+        val current = runBlocking { repo.observeDailyStats(1, today.toString()).first() }
+        compose.waitUntil(15_000) {
+            val label = compose.onNodeWithTag(tag).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
+            label.contains("Приемов пищи: ${current.meals.size}") && label.contains("Приемов лекарств: ${current.medicines.size}") && label.contains("Туалет: ${current.stools.size}")
+        }
         val original = compose.onNodeWithTag(tag).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single()
+        compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("Добавить запись").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Добавить запись").performClick()
         compose.onNode(hasText("Туалет") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("4 · Гладкий, мягкий, оформленный").performScrollTo().performClick()
@@ -105,7 +113,7 @@ class CalendarWorkflowTest {
         }
         compose.waitUntil(15_000) { compose.onAllNodesWithTag("month-calendar").fetchSemanticsNodes().isNotEmpty() }
         capture("calendar-dark-large-text")
-        compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-snack"))
+        compose.onNodeWithTag("daily-list").performScrollToNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack")))
         compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack"))).assertIsDisplayed()
     }
 
@@ -117,7 +125,7 @@ class CalendarWorkflowTest {
         }
         compose.onNodeWithTag("daily-list").performScrollToIndex(0)
         capture("calendar-landscape")
-        compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-snack"))
+        compose.onNodeWithTag("daily-list").performScrollToNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack")))
         compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack"))).assertIsDisplayed()
         compose.activityRule.scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
     }
@@ -132,7 +140,8 @@ class CalendarWorkflowTest {
         try {
             runBlocking { repo.saveMeal(day, MealType.BREAKFAST, null, listOf(product.id)) }
             val before = runBlocking { repo.observeDailyStats(1, day).first().meals }
-            compose.onNodeWithContentDescription("Добавить запись").performClick()
+            compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("Добавить запись").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("Добавить запись").performClick()
             compose.onNode(hasText("Завтрак") and hasAnyAncestor(isDialog())).performClick()
             compose.onNodeWithText("Выбрано: 0").assertExists()
             compose.onNodeWithText("Продукты").performClick()

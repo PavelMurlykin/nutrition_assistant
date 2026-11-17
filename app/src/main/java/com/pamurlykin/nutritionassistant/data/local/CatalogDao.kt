@@ -62,4 +62,18 @@ interface CatalogDao {
     @Query("SELECT * FROM product_components ORDER BY owner_id, position, product_id") suspend fun allProductComponents(): List<ProductComponentEntity>
     @Query("DELETE FROM product_components WHERE owner_id = :id") suspend fun clearComponents(id: Long)
     @Insert suspend fun insertComponents(items: List<ProductComponentEntity>)
+    @Transaction @Query("SELECT * FROM catalog ORDER BY normalized_name, id") fun observeAllItems(): Flow<List<CatalogItem>>
+    @Transaction @Query("SELECT * FROM catalog ORDER BY id") suspend fun allItems(): List<CatalogItem>
+    @Query("SELECT * FROM backup_aliases") suspend fun aliases(): List<BackupAliasEntity>
+    @Query("SELECT * FROM backup_aliases") fun observeAliases(): Flow<List<BackupAliasEntity>>
+    @Insert(onConflict = OnConflictStrategy.ABORT) suspend fun insertAlias(alias: BackupAliasEntity)
+    @Query("UPDATE catalog SET favorite = :value WHERE id = :id") suspend fun setFavorite(id: Long, value: Boolean)
+    @Query("""SELECT catalog_id FROM (
+        SELECT meal_items.catalog_id, meals.date || 'T' || COALESCE(meals.actual_time, '--:--') || '|' || meals.created_at AS used FROM meal_items JOIN meals ON meals.id = meal_items.meal_id WHERE meals.user_id = 1
+        UNION ALL SELECT medicine_items.catalog_id, medicines.date || 'T' || COALESCE(medicines.actual_time, '--:--') || '|' || medicines.created_at FROM medicine_items JOIN medicines ON medicines.id = medicine_items.medicine_id WHERE medicines.user_id = 1
+        ) GROUP BY catalog_id ORDER BY MAX(used) DESC, catalog_id DESC LIMIT 30""")
+    fun observeRecentIds(): Flow<List<Long>>
+    @Transaction @Query("SELECT * FROM meals WHERE user_id = 1 ORDER BY date DESC, actual_time DESC, id DESC LIMIT 10")
+    fun observeRecentMeals(): Flow<List<MealWithItems>>
+
 }

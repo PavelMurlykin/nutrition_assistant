@@ -28,9 +28,9 @@ class MigrationTest {
             execSQL("INSERT INTO stools VALUES (1,1,'2026-10-17',0,'2026-10-17T08:00:00','2026-10-17T08:00:00')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 5, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5).close()
+        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).close()
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -58,13 +58,13 @@ class MigrationTest {
             execSQL("INSERT INTO meal_items VALUES (2,1,2,'Йогурт','store','[\"Молоко\"]')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 5, true, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5).apply {
+        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).apply {
             query("SELECT COUNT(*) FROM catalog WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             query("SELECT COUNT(*) FROM meal_items WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             close()
         }
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -92,7 +92,7 @@ class MigrationTest {
             execSQL("INSERT INTO catalog VALUES (2,'product','Гречка','гречка','','[]',0)")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 5, true, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5).use { db ->
+        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).use { db ->
             db.query("SELECT id, name, archived, public_id FROM catalog ORDER BY id").use { cursor ->
                 assertTrue(cursor.moveToFirst()); assertEquals(1L, cursor.getLong(0)); assertEquals("Рис", cursor.getString(1)); assertEquals(1, cursor.getInt(2))
                 val first = java.util.UUID.fromString(cursor.getString(3))
@@ -111,7 +111,7 @@ class MigrationTest {
             execSQL("INSERT INTO sleeps (id,user_id,date,wakeup_time,bed_time,quality_description,created_at,updated_at,public_id) VALUES (1,1,'2026-10-17','07:00','23:00','Просыпался','2026-10-17T08:00:00','2026-10-17T08:00:00','55555555-5555-4555-8555-555555555555')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 5, true, NutritionDatabase.MIGRATION_4_5).use { database ->
+        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6).use { database ->
             database.query("SELECT public_id, category_code, composition_state, composition_source, revision FROM catalog").use {
                 assertTrue(it.moveToFirst()); assertEquals(product, it.getString(0)); assertTrue(it.isNull(1)); assertEquals("unknown", it.getString(2)); assertTrue(it.isNull(3)); assertEquals(1, it.getInt(4))
             }
@@ -123,6 +123,18 @@ class MigrationTest {
             }
             database.query("SELECT bed_date, wakeup_date FROM sleeps").use { assertTrue(it.moveToFirst()); assertTrue(it.isNull(0)); assertTrue(it.isNull(1)) }
             database.query("SELECT COUNT(*) FROM day_status").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
+        }
+    }
+
+    @Test fun versionFiveAddsFavoriteWithoutChangingIdentityOrHistoricalSnapshots() {
+        helper.createDatabase("migration-test", 5).apply {
+            execSQL("INSERT INTO catalog (id,kind,name,normalized_name,food_type,ingredients,archived,public_id,revision) VALUES (1,'product','Хлеб','хлеб','','[]',1,'11111111-1111-4111-8111-111111111111',7)")
+            close()
+        }
+        helper.runMigrationsAndValidate("migration-test", 6, true, NutritionDatabase.MIGRATION_5_6).use { database ->
+            database.query("SELECT public_id, name, archived, revision, favorite FROM catalog").use {
+                assertTrue(it.moveToFirst()); assertEquals("11111111-1111-4111-8111-111111111111", it.getString(0)); assertEquals("Хлеб", it.getString(1)); assertEquals(1, it.getInt(2)); assertEquals(7, it.getInt(3)); assertEquals(0, it.getInt(4))
+            }
         }
     }
 

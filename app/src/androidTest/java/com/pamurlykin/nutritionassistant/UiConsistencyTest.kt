@@ -64,11 +64,12 @@ class UiConsistencyTest {
 
     @Test fun unsavedMealSelectionsSurviveActivityRecreation() {
         compose.waitUntil(15_000) { compose.onAllNodesWithTag("daily-list").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("Добавить запись").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Добавить запись").performClick()
         compose.onNode(hasText("Перекус") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("Продукты").performClick()
         compose.onNodeWithText("Поиск по части названия").performTextInput("Молоко")
-        compose.onNode(hasText("Молоко") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button)).performClick()
+        compose.onNode(hasText("Молоко") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button)).performScrollTo().performClick()
         compose.onNodeWithText("Выбрано: 1").assertExists()
         compose.activityRule.scenario.recreate()
         compose.waitUntil(15_000) { compose.onAllNodesWithText("Выбрано: 1").fetchSemanticsNodes().isNotEmpty() }

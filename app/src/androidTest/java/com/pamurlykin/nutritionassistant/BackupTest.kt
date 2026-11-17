@@ -36,6 +36,7 @@ class BackupTest {
     }
     @After fun close() { source.close(); target.close() }
     private suspend fun populate() {
+        targetRepository.saveCatalogEntry(null, "product", "Чеснок для проверки", "", emptyList())
         val garlic = repository.saveCatalogEntry(null, "product", "Чеснок для проверки", "", emptyList())
         val dish = repository.saveCatalogEntry(null, "dish", "Котлета для проверки", "home", listOf(garlic.id))
         repository.saveMeal(day, MealType.LUNCH, null, listOf(dish.id, garlic.id))
@@ -153,7 +154,7 @@ class BackupTest {
         val bytes = store.export()
         val text = bytes.toString(Charsets.UTF_8)
         val unknown = JSONObject(text).put("unexpected", true).toString()
-        val wrongVersion = JSONObject(text).put("schemaVersion", 3).toString()
+        val wrongVersion = JSONObject(text).put("schemaVersion", 4).toString()
         val duplicate = text.replaceFirst("{", "{\"schemaVersion\":1,")
         val trailing = "$text {}"
         val invalidDate = text.replace(day, "2026-02-30")

@@ -21,8 +21,18 @@ class DailyStatsViewModel(
     private val today = MutableStateFlow(LocalDate.now())
     val error = MutableStateFlow<String?>(null)
     val busy = MutableStateFlow(false)
-    val catalog = repository.observeCatalog().catch { error.value = it.message ?: "Не удалось открыть справочник." }
+    val catalog = repository.observeCatalogGraph().catch { error.value = it.message ?: "Не удалось открыть справочник." }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val seedConflicts = repository.observeSeedConflicts().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val recentIds = repository.observeRecentCatalogIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val recentMeals = repository.observeRecentMeals().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    fun resolveSeed(key: String, targetId: Long?) = perform { repository.resolveSeed(key, targetId) }
+    fun favorite(id: Long, value: Boolean) = perform { repository.setFavorite(id, value) }
+    fun saveDraft(draft: CatalogDraft, onSuccess: (CatalogItem) -> Unit) {
+        var result: CatalogItem? = null
+        perform({ onSuccess(requireNotNull(result)) }) { result = repository.foodCatalog.save(draft.id, draft.kind, draft.name, draft.foodType, draft.details, draft.components) }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState = selectedDate.flatMapLatest { value ->
@@ -75,14 +85,17 @@ class DailyStatsViewModel(
         var result: CatalogItem? = null
         perform({ onSuccess(requireNotNull(result)) }) { result = repository.saveCatalogEntry(id, kind, name, type, productIds) }
     }
+    fun restoreCatalog(id: Long) = perform { repository.restoreCatalogEntry(id) }
     fun archiveCatalog(id: Long) = perform { repository.archiveCatalogEntry(id) }
-    fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit) {
+    fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit,
+        context: EventContext? = null, portions: Map<Long, Portion> = emptyMap(), comments: Map<Long, String?> = emptyMap(),
+        refresh: Set<Long> = emptySet(), sourceId: Long? = null, expectedHashes: Map<Long, String> = emptyMap()) {
         val date = selectedDate.value
-        perform(onSuccess) { repository.saveMeal(date, type, id, ids) }
+        perform(onSuccess) { repository.saveMeal(date, type, id, ids, context, portions, comments, refresh, sourceId, expectedHashes) }
     }
-    fun saveMedicines(id: Long?, selections: List<MedicineSelection>, onSuccess: () -> Unit) {
+    fun saveMedicines(id: Long?, selections: List<MedicineSelection>, onSuccess: () -> Unit, context: EventContext? = null) {
         val date = selectedDate.value
-        perform(onSuccess) { repository.saveMedicines(date, id, selections) }
+        perform(onSuccess) { repository.saveMedicines(date, id, selections, context) }
     }
     fun deleteMeal(id: Long) = perform { repository.deleteMeal(LocalUserDefaults.USER_ID, id) }
     fun deleteMedicine(id: Long) = perform { repository.deleteMedicine(LocalUserDefaults.USER_ID, id) }

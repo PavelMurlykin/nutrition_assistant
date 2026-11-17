@@ -22,6 +22,9 @@ import com.pamurlykin.nutritionassistant.util.StorageFormats
 fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val entries by viewModel.catalog.collectAsStateWithLifecycle()
+    val recentIds by viewModel.recentIds.collectAsStateWithLifecycle()
+    val recentMeals by viewModel.recentMeals.collectAsStateWithLifecycle()
+    var compositionItem by rememberSaveable { mutableStateOf<Long?>(null) }
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val calendar by viewModel.calendar.collectAsStateWithLifecycle()
     var dialogKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -31,14 +34,14 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
     }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { viewModel.refreshToday() }
     val snapshot = state.snapshot
-    val dialog = snapshot?.let { restoreDialog(dialogKey, it) }
+    val dialog = snapshot?.let { restoreDialog(dialogKey, it, recentMeals) }
     val openDialog: (DailyDialog) -> Unit = { dialogKey = it.storageKey() }
     CalendarDayLayout(calendar, state.selectedDate, busy, viewModel::previousMonth, viewModel::nextMonth,
-        viewModel::setDate, viewModel::goToToday, { if (snapshot != null) openDialog(DailyDialog.Choice) }) {
+        viewModel::setDate, viewModel::goToToday, { if (snapshot != null) openDialog(DailyDialog.Choice) }, addEnabled = snapshot != null) {
         item(key = "day-heading") {
             NutritionCard {
                 Text(StorageFormats.formatDateForDisplay(state.selectedDate), style = MaterialTheme.typography.titleLarge)
-                TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Date) }) { Text("Выбрать дату") }
+                TextButton(enabled = !busy && snapshot != null, onClick = { openDialog(DailyDialog.Date) }) { Text("Выбрать дату") }
                 if (snapshot != null) {
                     Text("Приемов пищи: ${snapshot.meals.size} · Лекарств: ${snapshot.medicines.size} · Туалет: ${snapshot.stools.size}",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -54,8 +57,11 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     if (events.isEmpty()) EmptyLabel("Записей нет.")
                     events.forEach { event ->
                         event.items.forEach { item ->
-                            Text(item.name + " · " + foodItemTypeTitle(item.kind, item.foodType), style = MaterialTheme.typography.titleMedium)
+                            Text(item.historyDisplayName() + " · " + foodItemTypeTitle(item.kind, item.foodType), style = MaterialTheme.typography.titleMedium)
                             if (item.ingredients.isNotEmpty()) Text(item.ingredients.joinToString(", "))
+                            if (item.quantity != null) Text(quantityTitle(item.quantity, item.unit))
+                            item.comment?.let { Text(it) }
+                            TextButton(onClick = { compositionItem = item.id }) { Text("Состав позиции") }
                         }
                         Actions(busy, { openDialog(DailyDialog.Meal(type, event)) }, { viewModel.deleteMeal(event.event.id) })
                     }
@@ -132,22 +138,41 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                         Text(type.title)
                     }
                 }
+                if (recentMeals.isNotEmpty()) TextButton(onClick = { openDialog(DailyDialog.Recent) }) { Text("Повторить недавний приём") }
                 TextButton(onClick = { openDialog(DailyDialog.Medicine(null)) }) { Text("Прием лекарств") }
                 TextButton(onClick = { openDialog(DailyDialog.Stool(null)) }) { Text("Туалет") }
             } },
             confirmButton = { AppDismissButton() }, dismissButton = null)
-        is DailyDialog.Meal -> CatalogEventDialog(
-            title = current.type.title, kind = CatalogKind.DISH,
-            initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, it.foodType, it.ingredients, kind = it.kind) }.orEmpty(),
-            entries = entries, busy = busy, onDismiss = dismiss,
-            onCreate = { kind, name, type, productIds, success -> viewModel.saveCatalog(null, kind, name, type, productIds, success) },
-            onSave = { selected -> viewModel.saveMeal(current.type, current.event?.event?.id, selected.map { it.id }, dismiss) })
-        is DailyDialog.Medicine -> CatalogEventDialog(
-            title = "Прием лекарств", kind = CatalogKind.MEDICINE,
-            initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, dosage = it.dosage.orEmpty()) }.orEmpty(),
-            entries = entries, busy = busy, onDismiss = dismiss,
-            onCreate = { kind, name, type, productIds, success -> viewModel.saveCatalog(null, kind, name, type, productIds, success) },
-            onSave = { selected -> viewModel.saveMedicines(current.event?.event?.id, selected.map { MedicineSelection(it.id, it.dosage) }, dismiss) })
+        DailyDialog.Recent -> AppDialog(onDismissRequest = dismiss, title = { Text("Повторить недавний приём") }, text = {
+            Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
+                recentMeals.forEach { source ->
+                    val type = MealType.entries.single { it.storageValue == source.event.mealType }
+                    TextButton(onClick = { openDialog(DailyDialog.Meal(type, null, source)) }) { Text(source.event.date + " · " + type.title + " · " + source.items.joinToString(", ") { it.historyDisplayName() }) }
+                }
+                Text("Перед сохранением можно проверить состав, изменить порции и убрать позиции.")
+            }
+        }, confirmButton = { AppDismissButton() }, dismissButton = null)
+        is DailyDialog.Meal -> {
+            val source = current.event ?: current.repeatSource
+            CatalogEventDialog(title = (if (current.repeatSource != null) "Повторить: " else "") + current.type.title, kind = CatalogKind.DISH,
+                initial = source?.items?.map { SelectedCatalogItem(it.catalogId, it.historyDisplayName(), it.foodType, it.ingredients, kind = it.kind,
+                    quantity = it.quantity.orEmpty(), unit = it.unit, comment = it.comment.orEmpty(), snapshot = it.compositionSnapshot) }.orEmpty(),
+                entries = entries, busy = busy, onDismiss = dismiss, onCreate = viewModel::saveDraft,
+                initialComment = source?.event?.comment.orEmpty(), recentIds = recentIds, onFavorite = viewModel::favorite, repeating = current.repeatSource != null,
+                onSave = { selected, comment -> viewModel.saveMeal(current.type, current.event?.event?.id, selected.map { it.id }, dismiss,
+                    context = EventContext(current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), comment),
+                    portions = selected.associate { it.id to Portion(it.quantity.takeIf(String::isNotBlank), it.unit) },
+                    comments = selected.associate { it.id to it.comment.takeIf(String::isNotBlank) }, refresh = selected.filter { it.refresh }.map { it.id }.toSet(),
+                    sourceId = current.repeatSource?.event?.id, expectedHashes = selected.mapNotNull { item -> item.expectedHash?.let { item.id to it } }.toMap()) })
+        }
+        is DailyDialog.Medicine -> CatalogEventDialog(title = "Прием лекарств", kind = CatalogKind.MEDICINE,
+            initial = current.event?.items?.map { SelectedCatalogItem(it.catalogId, it.name, dosage = it.dosage.orEmpty(), kind = CatalogKind.MEDICINE,
+                quantity = it.quantity.orEmpty(), unit = it.unit, comment = it.comment.orEmpty()) }.orEmpty(),
+            entries = entries, busy = busy, onDismiss = dismiss, onCreate = viewModel::saveDraft,
+            initialComment = current.event?.event?.comment.orEmpty(), recentIds = recentIds, onFavorite = viewModel::favorite,
+            onSave = { selected, comment -> viewModel.saveMedicines(current.event?.event?.id,
+                selected.map { MedicineSelection(it.id, it.dosage, Portion(it.quantity.takeIf(String::isNotBlank), it.unit), it.comment, true) }, dismiss,
+                context = EventContext(current.event?.event?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), comment)) })
         is DailyDialog.Stool -> StoolDialog(current.entry?.quality, busy, dismiss) { viewModel.saveStool(current.entry?.id, it, dismiss) }
         is DailyDialog.Feeling -> TextEntryDialog("Самочувствие", current.entry?.description.orEmpty(), busy, dismiss) {
             viewModel.saveFeeling(current.entry?.id, it, dismiss)
@@ -157,6 +182,9 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
             viewModel.saveSleep(wakeup, bed, quality, dismiss)
         }
         null -> Unit
+    }
+    snapshot?.meals?.flatMap { it.items }?.find { it.id == compositionItem }?.let { item ->
+        CompositionDialog(item.compositionSnapshot, item.ingredients) { compositionItem = null }
     }
 }
 
@@ -230,9 +258,10 @@ private fun SleepDialog(initial: SleepEntity?, busy: Boolean, onDismiss: () -> U
 }
 
 private sealed interface DailyDialog {
+    data object Recent : DailyDialog
     data object Choice : DailyDialog
     data object Date : DailyDialog
-    data class Meal(val type: MealType, val event: MealWithItems?) : DailyDialog
+    data class Meal(val type: MealType, val event: MealWithItems?, val repeatSource: MealWithItems? = null) : DailyDialog
     data class Medicine(val event: MedicineWithItems?) : DailyDialog
     data class Stool(val entry: StoolEntity?) : DailyDialog
     data class Feeling(val entry: FeelingEntity?) : DailyDialog
@@ -241,9 +270,10 @@ private sealed interface DailyDialog {
 }
 
 private fun DailyDialog.storageKey(): String = when (this) {
+    DailyDialog.Recent -> "recent"
     DailyDialog.Choice -> "choice"
     DailyDialog.Date -> "date"
-    is DailyDialog.Meal -> "meal:${type.name}:${event?.event?.id ?: 0}"
+    is DailyDialog.Meal -> if (repeatSource != null) "repeat:${repeatSource.event.id}" else "meal:${type.name}:${event?.event?.id ?: 0}"
     is DailyDialog.Medicine -> "medicine:${event?.event?.id ?: 0}"
     is DailyDialog.Stool -> "stool:${entry?.id ?: 0}"
     is DailyDialog.Feeling -> "feeling:${entry?.id ?: 0}"
@@ -251,11 +281,13 @@ private fun DailyDialog.storageKey(): String = when (this) {
     is DailyDialog.Water -> "water"
 }
 
-private fun restoreDialog(key: String?, snapshot: DailyStatsSnapshot): DailyDialog? {
+private fun restoreDialog(key: String?, snapshot: DailyStatsSnapshot, recent: List<MealWithItems>): DailyDialog? {
     if (key == null) return null
     val parts = key.split(':')
     val id = parts.last().toLongOrNull() ?: 0
     return when (parts.first()) {
+        "recent" -> DailyDialog.Recent
+        "repeat" -> recent.find { it.event.id == id }?.let { source -> DailyDialog.Meal(MealType.entries.single { it.storageValue == source.event.mealType }, null, source) }
         "choice" -> DailyDialog.Choice
         "date" -> DailyDialog.Date
         "meal" -> DailyDialog.Meal(MealType.valueOf(parts[1]), snapshot.meals.find { it.event.id == id })
