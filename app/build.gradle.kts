@@ -14,8 +14,8 @@ android {
         applicationId = "com.pamurlykin.nutritionassistant"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.4.0"
+        versionCode = 6
+        versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -50,6 +50,7 @@ android {
     }
 
     sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
+    sourceSets.getByName("androidTest").assets.directories.add("${rootProject.projectDir}/docs/examples")
 }
 
 kotlin {

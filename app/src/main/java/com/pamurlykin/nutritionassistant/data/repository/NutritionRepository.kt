@@ -102,7 +102,8 @@ class NutritionRepository(private val database: NutritionDatabase) {
             }
             require(duplicate == null || duplicate.id == id) { "Такое название уже есть в этом справочнике." }
             val entry = CatalogEntryEntity(id = id ?: 0, kind = kind, name = cleanName,
-                normalizedName = normalizeName(cleanName), foodType = cleanType)
+                normalizedName = normalizeName(cleanName), foodType = cleanType,
+                publicId = id?.let { catalog.get(it)?.publicId } ?: java.util.UUID.randomUUID().toString())
             val entryId = if (id == null) catalog.insert(entry) else id.also { catalog.update(entry) }
             catalog.clearProducts(entryId)
             catalog.insertProducts(selected.map { DishProductEntity(entryId, it) })
@@ -170,7 +171,8 @@ class NutritionRepository(private val database: NutritionDatabase) {
         }
         val event = MealEntity(id = existing?.id ?: 0, userId = LocalUserDefaults.USER_ID, date = date,
             mealType = type.storageValue, description = selected.joinToString("; ") { it.name },
-            createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp())
+            createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp(),
+            publicId = existing?.publicId ?: java.util.UUID.randomUUID().toString())
         val eventId = if (existing == null) meals.insert(event) else existing.id.also { meals.update(event) }
         catalog.clearMeal(eventId)
         catalog.insertMealItems(selected.map { it.copy(mealId = eventId) })
@@ -187,10 +189,12 @@ class NutritionRepository(private val database: NutritionDatabase) {
             require(entry.kind == CatalogKind.MEDICINE && (!entry.archived || old != null)) { "Лекарство удалено из справочника." }
             val dosage = selection.dosage.trim().ifBlank { null }
             require((dosage?.length ?: 0) <= 1000) { "Слишком длинная дозировка." }
-            MedicineItemEntity(medicineId = 0, catalogId = entry.id, name = old?.name ?: entry.name, dosage = dosage)
+            MedicineItemEntity(medicineId = 0, catalogId = entry.id, name = old?.name ?: entry.name, dosage = dosage,
+                publicId = old?.publicId ?: java.util.UUID.randomUUID().toString())
         }
         val event = MedicineEntity(id = existing?.id ?: 0, userId = LocalUserDefaults.USER_ID, date = date,
-            name = selected.joinToString("; ") { it.name }, dosage = null, createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp())
+            name = selected.joinToString("; ") { it.name }, dosage = null, createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp(),
+            publicId = existing?.publicId ?: java.util.UUID.randomUUID().toString())
         val eventId = if (existing == null) medicines.insert(event) else existing.id.also { medicines.update(event) }
         catalog.clearMedicine(eventId)
         catalog.insertMedicineItems(selected.map { it.copy(medicineId = eventId) })
@@ -220,7 +224,8 @@ class NutritionRepository(private val database: NutritionDatabase) {
         require(count >= 0)
         val old = water.getForDay(userId, date)
         water.upsert(WaterEntity(id = old?.id ?: 0, userId = userId, date = date, glassesCount = count,
-            createdAt = old?.createdAt ?: StorageFormats.nowTimestamp()))
+            createdAt = old?.createdAt ?: StorageFormats.nowTimestamp(),
+            publicId = old?.publicId ?: java.util.UUID.randomUUID().toString()))
     }
     suspend fun incrementWater(userId: Long, date: String, delta: Int) = database.withTransaction {
         val count = water.getForDay(userId, date)?.glassesCount ?: 0
@@ -231,7 +236,8 @@ class NutritionRepository(private val database: NutritionDatabase) {
         sleeps.upsert(SleepEntity(id = old?.id ?: 0, userId = userId, date = date,
             wakeupTime = validateTime(wakeupTime), bedTime = validateTime(bedTime),
             qualityDescription = qualityDescription?.trim()?.ifBlank { null },
-            createdAt = old?.createdAt ?: StorageFormats.nowTimestamp()))
+            createdAt = old?.createdAt ?: StorageFormats.nowTimestamp(),
+            publicId = old?.publicId ?: java.util.UUID.randomUUID().toString()))
     }
     suspend fun deleteSleep(userId: Long, date: String) = sleeps.deleteForDay(userId, date)
     suspend fun markNotificationSent(userId: Long, type: String, date: String): Boolean =

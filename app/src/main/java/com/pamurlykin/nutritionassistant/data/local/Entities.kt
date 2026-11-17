@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.pamurlykin.nutritionassistant.util.StorageFormats
 
-@Entity(tableName = "users")
+@Entity(tableName = "users", indices = [Index(value = ["public_id"], unique = true)])
 data class UserEntity(
     @PrimaryKey
     @ColumnInfo(name = "user_id")
@@ -35,11 +35,13 @@ data class UserEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "meals",
-    indices = [Index(value = ["user_id", "date"])],
+    indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true)],
 )
 data class MealEntity(
     @PrimaryKey(autoGenerate = true)
@@ -54,11 +56,13 @@ data class MealEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "medicines",
-    indices = [Index(value = ["user_id", "date"])],
+    indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true)],
 )
 data class MedicineEntity(
     @PrimaryKey(autoGenerate = true)
@@ -72,11 +76,13 @@ data class MedicineEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "stools",
-    indices = [Index(value = ["user_id", "date"])],
+    indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true)],
 )
 data class StoolEntity(
     @PrimaryKey(autoGenerate = true)
@@ -89,11 +95,13 @@ data class StoolEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "feelings",
-    indices = [Index(value = ["user_id", "date"])],
+    indices = [Index(value = ["user_id", "date"]), Index(value = ["public_id"], unique = true)],
 )
 data class FeelingEntity(
     @PrimaryKey(autoGenerate = true)
@@ -106,11 +114,13 @@ data class FeelingEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "water",
-    indices = [Index(value = ["user_id", "date"], unique = true)],
+    indices = [Index(value = ["user_id", "date"], unique = true), Index(value = ["public_id"], unique = true)],
 )
 data class WaterEntity(
     @PrimaryKey(autoGenerate = true)
@@ -124,11 +134,13 @@ data class WaterEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(
     tableName = "sleeps",
-    indices = [Index(value = ["user_id", "date"], unique = true)],
+    indices = [Index(value = ["user_id", "date"], unique = true), Index(value = ["public_id"], unique = true)],
 )
 data class SleepEntity(
     @PrimaryKey(autoGenerate = true)
@@ -146,6 +158,8 @@ data class SleepEntity(
     val createdAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id", defaultValue = "''")
+    val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(

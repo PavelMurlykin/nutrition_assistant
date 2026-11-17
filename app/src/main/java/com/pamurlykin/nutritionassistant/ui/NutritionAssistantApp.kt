@@ -28,6 +28,8 @@ import com.pamurlykin.nutritionassistant.ui.daily.DailyStatsViewModel
 import com.pamurlykin.nutritionassistant.ui.navigation.TopLevelDestination
 import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleScreen
 import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleViewModel
+import com.pamurlykin.nutritionassistant.ui.backup.BackupScreen
+import com.pamurlykin.nutritionassistant.ui.backup.BackupViewModel
 
 @Composable
 fun NutritionAssistantApp(
@@ -44,6 +46,7 @@ fun NutritionAssistantApp(
     val dailyStatsViewModel: DailyStatsViewModel = viewModel(
         factory = DailyStatsViewModel.factory(repository = container.repository),
     )
+    val backupViewModel: BackupViewModel = viewModel(factory = BackupViewModel.factory(container))
 
     val error by dailyStatsViewModel.error.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -90,6 +93,9 @@ fun NutritionAssistantApp(
             }
             composable(TopLevelDestination.CATALOG.route) {
                 CatalogScreen(viewModel = dailyStatsViewModel)
+            }
+            composable(TopLevelDestination.DATA.route) {
+                BackupScreen(viewModel = backupViewModel)
             }
         }
     }

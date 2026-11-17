@@ -23,8 +23,9 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         MealItemEntity::class,
         MedicineItemEntity::class,
         DishProductEntity::class,
+        BackupAliasEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(IngredientConverters::class)
@@ -40,6 +41,19 @@ abstract class NutritionDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
 
     companion object {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf("users", "catalog", "meals", "medicines", "stools", "feelings", "water", "sleeps", "meal_items", "medicine_items").forEach { table ->
+                    val key = if (table == "users") "user_id" else "id"
+                    db.execSQL("ALTER TABLE $table ADD COLUMN public_id TEXT NOT NULL DEFAULT ''")
+                    val ids = mutableListOf<Long>()
+                    db.query("SELECT $key FROM $table").use { cursor -> while (cursor.moveToNext()) ids += cursor.getLong(0) }
+                    ids.forEach { id -> db.execSQL("UPDATE $table SET public_id = ? WHERE $key = ?", arrayOf<Any>(java.util.UUID.randomUUID().toString(), id)) }
+                    db.execSQL("CREATE UNIQUE INDEX index_${table}_public_id ON $table (public_id)")
+                }
+                db.execSQL("CREATE TABLE IF NOT EXISTS backup_aliases (source_id TEXT NOT NULL PRIMARY KEY, target_id TEXT NOT NULL, type TEXT NOT NULL)")
+            }
+        }
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 listOf("breakfast", "lunch", "dinner", "toilet").forEach {
@@ -83,6 +97,6 @@ abstract class NutritionDatabase : RoomDatabase() {
                 context,
                 NutritionDatabase::class.java,
                 "nutrition_assistant.db",
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
     }
 }

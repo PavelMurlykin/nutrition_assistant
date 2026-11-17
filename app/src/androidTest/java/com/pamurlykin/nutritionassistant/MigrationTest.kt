@@ -28,9 +28,9 @@ class MigrationTest {
             execSQL("INSERT INTO stools VALUES (1,1,'2026-10-17',0,'2026-10-17T08:00:00','2026-10-17T08:00:00')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 3, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3).close()
+        helper.runMigrationsAndValidate("migration-test", 4, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4).close()
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -58,13 +58,13 @@ class MigrationTest {
             execSQL("INSERT INTO meal_items VALUES (2,1,2,'Йогурт','store','[\"Молоко\"]')")
             close()
         }
-        helper.runMigrationsAndValidate("migration-test", 3, true, NutritionDatabase.MIGRATION_2_3).apply {
+        helper.runMigrationsAndValidate("migration-test", 4, true, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4).apply {
             query("SELECT COUNT(*) FROM catalog WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             query("SELECT COUNT(*) FROM meal_items WHERE food_type = 'store'").use { it.moveToFirst(); assertEquals(0, it.getInt(0)) }
             close()
         }
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -85,5 +85,19 @@ class MigrationTest {
             repository.saveMeal("2026-10-17", com.pamurlykin.nutritionassistant.data.model.MealType.BREAKFAST, 1, listOf(1, 2))
             assertEquals(before.items.map { it.name }, repository.observeDailyStats(1, "2026-10-17").first().meals.single().items.map { it.name })
         } finally { db.close() }
+    }
+    @Test fun versionThreeAssignsUniqueStableUuidsWithoutChangingRows() {
+        helper.createDatabase("migration-test", 3).apply {
+            execSQL("INSERT INTO catalog VALUES (1,'product','Рис','рис','','[]',1)")
+            execSQL("INSERT INTO catalog VALUES (2,'product','Гречка','гречка','','[]',0)")
+            close()
+        }
+        helper.runMigrationsAndValidate("migration-test", 4, true, NutritionDatabase.MIGRATION_3_4).use { db ->
+            db.query("SELECT id, name, archived, public_id FROM catalog ORDER BY id").use { cursor ->
+                assertTrue(cursor.moveToFirst()); assertEquals(1L, cursor.getLong(0)); assertEquals("Рис", cursor.getString(1)); assertEquals(1, cursor.getInt(2))
+                val first = java.util.UUID.fromString(cursor.getString(3))
+                assertTrue(cursor.moveToNext()); assertNotEquals(first, java.util.UUID.fromString(cursor.getString(3)))
+            }
+        }
     }
 }

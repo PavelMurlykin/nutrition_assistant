@@ -26,7 +26,7 @@ $env:JAVA_HOME = 'C:\Program Files\Android\openjdk\jdk-21.0.8'
 
 Use your own installation path on another computer. `--version` should report a compatible JVM. [Configuring the Gradle JDK in Android Studio](https://developer.android.com/build/jdks).
 
-The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, and «Меню» (Menu), the dish, product, and medication catalogs. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Cloud backup is disabled. Import, export, and synchronization are unavailable; uninstalling the app deletes its data.
+The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, «Меню» (Menu) for dish, product, and medication catalogs, and «Данные» (Data) for JSON backups. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Automatic cloud backup and synchronization are unavailable. Save a JSON copy in Data before uninstalling: uninstalling deletes the local database.
 
 ## Calendar and diary
 
@@ -93,9 +93,36 @@ Sleep, wellbeing, snacks, medication, and water are entered manually without rem
 
 Android may delay inexact reminders to save battery. Reopen the app after rebooting or force-stopping it to restore reminders. Automatic boot restoration and exact alarms would need additional permissions, so they are not used. Time and timezone changes recalculate the schedule.
 
+## Data: JSON backup
+
+In version 0.5.0, open the bottom «Данные» (Data) tab. A backup includes the entire diary, catalogs, archived entries, historical meal compositions, doses, wellbeing and sleep-quality text, and reminder settings. The current date filter does not limit the backup. The file is not encrypted and contains health information; you choose where to store it and whom to share it with.
+
+### Export
+
+1. Tap «Экспорт резервной копии» (Export backup) and wait for the snapshot to be prepared.
+2. Choose a location in the system dialog and save `nutrition-backup-YYYYMMDD-HHmmss.json`.
+3. Wait for the saved message. Records added after snapshot preparation belong to the next backup.
+
+No additional storage permission is needed. A copy outside the local database can be transferred to another device. Save a new verified backup before uninstalling.
+
+### Import
+
+1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
+2. Review «Проверка импорта» (Import preview): object counts, additions, matches, and conflicts. History merges into the current personal diary; the database is not cleared.
+3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local composition and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. To store distinct products separately, distinguish their names first: this version does not support same-name variants within a catalog section/food type.
+4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water and sleep records on the same date also remain. Long lists show the first 100 details of each kind and the total count.
+5. Optionally select «Восстановить настройки напоминаний из файла» (Restore reminder settings from file). Current settings remain by default. Enable this option for full restoration on a new device.
+6. Tap «Применить импорт» (Apply import) and wait for the result. «Отмена» (Cancel) closes the preview without changing the diary.
+
+Matching UUIDs and previously approved matches are recognized on repeated imports, preventing duplicates. Validation and application cover the entire operation: corruption, unknown fields/versions, or a write failure cannot cause partial restoration. If the diary, catalog, or settings change after preview, select the file again. File operations and validation run in the background; another operation is blocked while one is running.
+
+The preview and prepared backup survive screen recreation within the current process. After process termination, select the file again. Interrupted export may leave an empty or incomplete file: save a new backup and verify it by opening the import preview. Android notification permission is not transferred; check Schedule after restoration. The sent-notification log is not restored. Full database replacement, synchronization, and importing multiple profiles are unavailable.
+
+[Format description and synthetic example](backup-format.md) are provided for transfer checks on a separate test installation.
+
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 preserve events and reminder settings. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 preserve events and reminder settings. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
 
 Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 

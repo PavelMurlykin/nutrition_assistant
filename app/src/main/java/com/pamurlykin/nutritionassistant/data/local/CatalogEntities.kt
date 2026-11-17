@@ -2,7 +2,7 @@ package com.pamurlykin.nutritionassistant.data.local
 
 import androidx.room.*
 
-@Entity(tableName = "catalog", indices = [Index(value = ["kind", "food_type", "normalized_name"], unique = true)])
+@Entity(tableName = "catalog", indices = [Index(value = ["kind", "food_type", "normalized_name"], unique = true), Index(value = ["public_id"], unique = true)])
 data class CatalogEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val kind: String,
@@ -12,6 +12,7 @@ data class CatalogEntryEntity(
     // Compatibility column for schema 2; current recipes use dish_products.
     val ingredients: List<String> = emptyList(),
     val archived: Boolean = false,
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(tableName = "dish_products", primaryKeys = ["dish_id", "product_id"], foreignKeys = [
@@ -42,7 +43,7 @@ data class CatalogItem(
 @Entity(tableName = "meal_items", foreignKeys = [
     ForeignKey(entity = MealEntity::class, parentColumns = ["id"], childColumns = ["meal_id"], onDelete = ForeignKey.CASCADE),
     ForeignKey(entity = CatalogEntryEntity::class, parentColumns = ["id"], childColumns = ["catalog_id"]),
-], indices = [Index("meal_id"), Index("catalog_id")])
+], indices = [Index("meal_id"), Index("catalog_id"), Index(value = ["public_id"], unique = true)])
 data class MealItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "meal_id") val mealId: Long,
@@ -51,18 +52,28 @@ data class MealItemEntity(
     @ColumnInfo(name = "food_type") val foodType: String,
     val ingredients: List<String>,
     @ColumnInfo(defaultValue = "'dish'") val kind: String = "dish",
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(tableName = "medicine_items", foreignKeys = [
     ForeignKey(entity = MedicineEntity::class, parentColumns = ["id"], childColumns = ["medicine_id"], onDelete = ForeignKey.CASCADE),
     ForeignKey(entity = CatalogEntryEntity::class, parentColumns = ["id"], childColumns = ["catalog_id"]),
-], indices = [Index("medicine_id"), Index("catalog_id")])
+], indices = [Index("medicine_id"), Index("catalog_id"), Index(value = ["public_id"], unique = true)])
 data class MedicineItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "medicine_id") val medicineId: Long,
     @ColumnInfo(name = "catalog_id") val catalogId: Long,
     val name: String,
     val dosage: String?,
+    @ColumnInfo(name = "public_id", defaultValue = "''") val publicId: String = java.util.UUID.randomUUID().toString(),
+)
+
+/** Explicit, persistent matches confirmed in an import preview. */
+@Entity(tableName = "backup_aliases")
+data class BackupAliasEntity(
+    @PrimaryKey @ColumnInfo(name = "source_id") val sourceId: String,
+    @ColumnInfo(name = "target_id") val targetId: String,
+    val type: String,
 )
 
 data class MealWithItems(

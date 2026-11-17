@@ -1,0 +1,39 @@
+{
+  "applicationId": "com.pamurlykin.nutritionassistant",
+  "schemaVersion": 1,
+  "appVersion": "0.5.0",
+  "exportedAt": "2026-11-17T08:00:00Z",
+  "records": [
+    {
+      "type": "users",
+      "publicId": "00000000-0000-4000-8000-000000000001",
+      "values": {
+        "breakfast_time": "08:00", "lunch_time": "13:00", "dinner_time": "19:00", "toilet_time": "09:00",
+        "wakeup_time": "07:00", "bed_time": "23:00",
+        "breakfast_enabled": true, "lunch_enabled": false, "dinner_enabled": true, "toilet_enabled": true,
+        "created_at": "2026-11-17T08:00:00", "updated_at": "2026-11-17T08:00:00"
+      }
+    },
+    {
+      "type": "catalog",
+      "publicId": "00000000-0000-4000-8000-000000000002",
+      "values": { "kind": "product", "name": "Пример: молоко", "normalized_name": "пример: молоко", "food_type": "", "ingredients": [], "archived": false, "product_ids": [] }
+    },
+    {
+      "type": "catalog",
+      "publicId": "00000000-0000-4000-8000-000000000003",
+      "values": { "kind": "dish", "name": "Пример: тестовое блюдо", "normalized_name": "пример: тестовое блюдо", "food_type": "home", "ingredients": [], "archived": false, "product_ids": ["00000000-0000-4000-8000-000000000002"] }
+    },
+    {
+      "type": "meals",
+      "publicId": "00000000-0000-4000-8000-000000000004",
+      "values": { "user_id": "00000000-0000-4000-8000-000000000001", "date": "2026-11-17", "meal_type": "breakfast", "description": "Пример: тестовое блюдо", "created_at": "2026-11-17T08:00:00", "updated_at": "2026-11-17T08:00:00" }
+    },
+    {
+      "type": "meal_items",
+      "publicId": "00000000-0000-4000-8000-000000000005",
+      "values": { "meal_id": "00000000-0000-4000-8000-000000000004", "catalog_id": "00000000-0000-4000-8000-000000000003", "name": "Пример: тестовое блюдо", "food_type": "home", "ingredients": ["Пример: молоко"], "kind": "dish", "position": 0 }
+    }
+  ],
+  "aliases": []
+}
