@@ -7,8 +7,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +29,7 @@ import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleScreen
 import com.pamurlykin.nutritionassistant.ui.schedule.ScheduleViewModel
 import com.pamurlykin.nutritionassistant.ui.backup.BackupScreen
 import com.pamurlykin.nutritionassistant.ui.backup.BackupViewModel
+import com.pamurlykin.nutritionassistant.ui.components.AppDialog
 
 @Composable
 fun NutritionAssistantApp(
@@ -49,14 +49,9 @@ fun NutritionAssistantApp(
     val backupViewModel: BackupViewModel = viewModel(factory = BackupViewModel.factory(container))
 
     val error by dailyStatsViewModel.error.collectAsStateWithLifecycle()
-    val snackbar = remember { SnackbarHostState() }
-    LaunchedEffect(error) {
-        error?.let { snackbar.showSnackbar(it); dailyStatsViewModel.error.value = null }
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -99,4 +94,7 @@ fun NutritionAssistantApp(
             }
         }
     }
+    error?.let { message -> AppDialog(onDismissRequest = { dailyStatsViewModel.error.value = null },
+        title = { Text("Не удалось выполнить действие") }, text = { Text(message) }, dismissButton = null,
+        confirmButton = { TextButton(onClick = { dailyStatsViewModel.error.value = null }) { Text("Понятно") } }) }
 }

@@ -16,7 +16,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pamurlykin.nutritionassistant.data.backup.*
-import com.pamurlykin.nutritionassistant.ui.components.NutritionCard
+import com.pamurlykin.nutritionassistant.ui.components.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -60,7 +60,8 @@ fun ImportPreviewDialog(preview: ImportPreview, busy: Boolean, onDismiss: () -> 
     var matchCatalog by rememberSaveable(preview) { mutableStateOf(false) }
     var restoreSettings by rememberSaveable(preview) { mutableStateOf(false) }
     var restoreCatalog by rememberSaveable(preview) { mutableStateOf(false) }
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() },
+    AppDialog(onDismissRequest = { if (!busy) onDismiss() }, busy = busy,
+        hasChanges = keepLocal || matchCatalog || restoreSettings || restoreCatalog,
         title = { Text("Проверка импорта") },
         text = {
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 440.dp).testTag("import-preview"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -92,7 +93,7 @@ fun ImportPreviewDialog(preview: ImportPreview, busy: Boolean, onDismiss: () -> 
         },
         confirmButton = { TextButton(enabled = !busy && (preview.conflicts.isEmpty() || keepLocal) && (preview.catalogMatches.isEmpty() || matchCatalog),
             onClick = { onApply(ImportOptions(keepLocal, matchCatalog, restoreSettings, restoreCatalog)) }, modifier = Modifier.testTag("apply-import")) { Text("Применить импорт") } },
-        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Отмена") } },
+        dismissButton = { AppDismissButton(enabled = !busy) },
     )
 }
 

@@ -28,9 +28,19 @@ Use your own installation path on another computer. `--version` should report a 
 
 The app opens «Календарь» (Calendar) with today's diary. The bottom tabs are «Расписание» (Schedule) for reminder times, «Календарь» (Calendar) for daily records and statistics, «Меню» (Menu) for dish, product, and medication catalogs, and «Данные» (Data) for JSON backups. Light and dark themes follow Android settings; the palette, cards, and calendar are based on sports_activity_assistant. The interface is in Russian. No internet, registration, or server is required. One local user's data is stored in Room. Automatic cloud backup and synchronization are unavailable. Save a JSON copy in Data before uninstalling: uninstalling deletes the local database.
 
+## Consistent interface and forms
+
+In version 0.6.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+
+The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
+
+Deleting a diary record or removing a catalog entry first asks for confirmation. Diary or catalog action failures appear in «Не удалось выполнить действие» (Action failed); «Понятно» (Understood) returns to the entered values. Invalid fields are highlighted and saving is disabled until corrected. While saving, repeated actions and closing the editor are blocked.
+
+Enter eight digits for a date, for example `17112026` → `17.11.2026`, or four digits including a leading zero for a time, for example `0935` → `09:35`. Separators are inserted automatically. «Выбрать» (Select) applies the value; invalid dates and times outside 00:00–23:59 are rejected. Android's file picker and permission dialogs retain the system's own appearance.
+
 ## Calendar and diary
 
-The calendar displays six Monday-first weeks, including adjacent months. Arrows and horizontal swipes browse months; switching selects the first day of the new month, as in sports_activity_assistant. Tap a day to open its records; tapping an adjacent month's day also changes the visible month. «Сегодня» (Today) returns to the current date. «Выбрать дату» (Select date) below the calendar opens the system date picker. Today has an outline and the selected day is highlighted. The selected date and visible month survive screen recreation and tab changes.
+The calendar displays six Monday-first weeks, including adjacent months. Arrows and horizontal swipes browse months; switching selects the first day of the new month, as in sports_activity_assistant. Tap a day to open its records; tapping an adjacent month's day also changes the visible month. «Сегодня» (Today) returns to the current date. «Выбрать дату» (Select date) below the calendar opens a date-input form using the app theme. Today has an outline and the selected day is highlighted. The selected date and visible month survive screen recreation and tab changes.
 
 Food, medication, and toilet icons mark days with saved events. The diary heading shows counts of meals, medication intakes, and toilet visits for the selected day. Multiple dishes in one meal or medicines in one intake count as one event. Edits and deletions update the calendar automatically; an empty day is never assumed symptom-free.
 
@@ -85,7 +95,7 @@ Catalog edits affect new events. Logged meals retain their original names, types
 
 ## Reminders and permission
 
-«Расписание» (Schedule) provides four independent daily reminders: breakfast (08:00), lunch (13:00), dinner (19:00), and toilet (09:00). They default to enabled, but delivery needs notification permission. Use the switch to disable one reminder and «Изменить время» to change its time. Settings are saved locally.
+«Расписание» (Schedule) provides four independent daily reminders: breakfast (08:00), lunch (13:00), dinner (19:00), and toilet (09:00). They default to enabled, but delivery needs notification permission. Use the switch to disable one reminder; «Изменить время» opens the shared HH:mm input form. Settings are saved locally after «Выбрать» (Select).
 
 The app's only permission is POST_NOTIFICATIONS. On Android 13+, «Разрешить уведомления» requests it. If Android no longer displays the prompt, use «Открыть настройки Android» to enable notifications in system settings. On Android 8–12 the button opens system settings. The diary remains usable when permission is denied. The notification channel can also be disabled in Android settings.
 
@@ -95,7 +105,7 @@ Android may delay inexact reminders to save battery. Reopen the app after reboot
 
 ## Data: JSON backup
 
-In version 0.5.0, open the bottom «Данные» (Data) tab. A backup includes the entire diary, catalogs, archived entries, historical meal compositions, doses, wellbeing and sleep-quality text, and reminder settings. The current date filter does not limit the backup. The file is not encrypted and contains health information; you choose where to store it and whom to share it with.
+Open the bottom «Данные» (Data) tab. A backup includes the entire diary, catalogs, archived entries, historical meal compositions, doses, wellbeing and sleep-quality text, and reminder settings. The current date filter does not limit the backup. The file is not encrypted and contains health information; you choose where to store it and whom to share it with.
 
 ### Export
 

@@ -1,6 +1,6 @@
 # Резервные копии Nutrition Assistant: JSON 1
 
-Приложение 0.5.0, схема Room 4. Версия файла JSON независима от Room. Это формат Nutrition Assistant; файлы sports_activity_assistant не принимаются.
+Текущее приложение 0.6.0, схема Room 4; JSON 1 поддерживается начиная с 0.5.0. Версия файла JSON независима от Room. Это формат Nutrition Assistant; файлы sports_activity_assistant не принимаются.
 
 ## Пользовательский сценарий
 

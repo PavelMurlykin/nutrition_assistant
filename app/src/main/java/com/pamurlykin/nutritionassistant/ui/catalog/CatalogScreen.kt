@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -19,11 +20,13 @@ import com.pamurlykin.nutritionassistant.ui.daily.DailyStatsViewModel
 fun CatalogScreen(viewModel: DailyStatsViewModel) {
     val entries by viewModel.catalog.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
-    var kind by remember { mutableStateOf(CatalogKind.DISH) }
-    var type by remember { mutableStateOf(FoodType.HOME.storageValue) }
-    var query by remember { mutableStateOf("") }
-    var editing by remember { mutableStateOf(false) }
-    var entry by remember { mutableStateOf<CatalogItem?>(null) }
+    var kind by rememberSaveable { mutableStateOf(CatalogKind.DISH) }
+    var type by rememberSaveable { mutableStateOf(FoodType.HOME.storageValue) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var entryId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var archiveId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val entry = entries.find { it.id == entryId }
     val visible = entries.filter { it.kind == kind && (kind != CatalogKind.DISH || it.foodType == type || it.foodType == "unknown") && catalogMatches(it, query) }
     LazyColumn(modifier = Modifier.testTag("catalog-list"), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -37,8 +40,8 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
                 FilterChip(selected = kind == CatalogKind.MEDICINE, onClick = { kind = CatalogKind.MEDICINE; query = "" }, label = { Text("Лекарства") })
             }
             if (kind == CatalogKind.DISH) FoodTypePicker(type) { type = it }
-            OutlinedTextField(query, { query = it }, label = { Text("Поиск по части названия") }, modifier = Modifier.fillMaxWidth())
-            TextButton(enabled = !busy, onClick = { entry = null; editing = true }) { Text("Добавить запись") }
+            AppTextField(query, { query = it }, label = { Text("Поиск по части названия") }, modifier = Modifier.fillMaxWidth())
+            TextButton(enabled = !busy, onClick = { entryId = null; editing = true }) { Text("Добавить запись") }
             if (kind == CatalogKind.DISH) Text("Собирайте состав блюда из продуктов. Типовые блюда можно менять под свой рецепт.")
         }
         if (visible.isEmpty()) item { EmptyLabel("Записей нет. Добавьте первую запись.") }
@@ -47,14 +50,16 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
                 Text(item.name, style = MaterialTheme.typography.titleLarge)
                 if (item.kind == CatalogKind.DISH) Text(FoodType.titleFor(item.foodType))
                 if (item.ingredients.isNotEmpty()) Text(item.ingredients.joinToString(", "))
-                Row {
-                    TextButton(enabled = !busy, onClick = { entry = item; editing = true }) { Text("Изменить") }
-                    TextButton(enabled = !busy, onClick = { viewModel.archiveCatalog(item.id) }) { Text("Убрать из справочника") }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(enabled = !busy, onClick = { entryId = item.id; editing = true }) { Text("Изменить") }
+                    TextButton(enabled = !busy, onClick = { archiveId = item.id }) { Text("Убрать из справочника") }
                 }
             }
         }
     }
-    if (editing) CatalogEditor(kind = kind, initial = entry, initialType = type, entries = entries, busy = busy, onDismiss = { editing = false },
+    archiveId?.let { id -> ConfirmActionDialog("Убрать из справочника?", "Позиция исчезнет из нового выбора. Составы и история сохранятся.", "Убрать",
+        onDismiss = { archiveId = null }, onConfirm = { archiveId = null; viewModel.archiveCatalog(id) }) }
+    if (editing && (entryId == null || entry != null)) CatalogEditor(kind = kind, initial = entry, initialType = type, entries = entries, busy = busy, onDismiss = { editing = false },
         onCreateProduct = { name, success -> viewModel.saveCatalog(null, CatalogKind.PRODUCT, name, "", emptyList(), success) },
         onSave = { id, entryKind, name, foodType, productIds ->
             viewModel.saveCatalog(id, entryKind, name, foodType, productIds) { editing = false }

@@ -46,9 +46,10 @@ fun CardHeadline(
     ) {
         Text(
             text = title,
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         trailing?.invoke()
@@ -60,6 +61,6 @@ fun EmptyLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.52f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

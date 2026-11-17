@@ -71,6 +71,7 @@ class CalendarWorkflowTest {
         capture("calendar-with-event")
         compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("stool-card"))
         compose.onAllNodes(hasText("Удалить") and hasAnyAncestor(hasTestTag("stool-card")) and hasClickAction()).onLast().performScrollTo().performClick()
+        compose.onNode(hasText("Удалить") and hasAnyAncestor(isDialog())).performClick()
         compose.waitUntil(10_000) {
             compose.onNodeWithTag(tag).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].single() == original
         }

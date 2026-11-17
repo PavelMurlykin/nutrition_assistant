@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +26,7 @@ fun ScheduleScreen(viewModel: ScheduleViewModel) {
     val user by viewModel.user.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var timeSlot by rememberSaveable { mutableStateOf<String?>(null) }
     var allowed by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         allowed = NotificationManagerCompat.from(context).areNotificationsEnabled()
@@ -51,11 +53,11 @@ fun ScheduleScreen(viewModel: ScheduleViewModel) {
         items(ScheduleSlot.entries) { slot ->
             NutritionCard {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(slot.title, style = MaterialTheme.typography.titleLarge)
+                    Text(slot.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                     Switch(checked = slot.enabled(user), onCheckedChange = { viewModel.setEnabled(slot, it) })
                 }
                 Text(slot.time(user), style = MaterialTheme.typography.headlineMedium)
-                TextButton(onClick = { showTimePicker(context, slot.time(user)) { viewModel.updateTime(slot, it) } }) { Text("Изменить время") }
+                TextButton(onClick = { timeSlot = slot.name }) { Text("Изменить время") }
             }
         }
         item {
@@ -65,5 +67,9 @@ fun ScheduleScreen(viewModel: ScheduleViewModel) {
                 Text("Все записи и справочники находятся на устройстве. Интернет и учетная запись не нужны.")
             }
         }
+    }
+    timeSlot?.let { selected ->
+        val slot = ScheduleSlot.valueOf(selected)
+        AppTimePicker(slot.time(user), onDismiss = { timeSlot = null }, onSelected = { viewModel.updateTime(slot, it) })
     }
 }

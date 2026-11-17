@@ -9,6 +9,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
@@ -39,11 +43,11 @@ fun CatalogEditor(
     onCreateProduct: (String, (CatalogItem) -> Unit) -> Unit,
     onSave: (Long?, String, String, String, List<Long>) -> Unit,
 ) {
-    var name by remember { mutableStateOf(initial?.name ?: initialName) }
-    var type by remember { mutableStateOf(initial?.foodType?.takeIf { value -> FoodType.entries.any { it.storageValue == value } } ?: initialType) }
-    var selected by remember { mutableStateOf(initial?.productIds.orEmpty()) }
-    var query by remember { mutableStateOf("") }
-    var creatingProduct by remember { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf(initial?.name ?: initialName) }
+    var type by rememberSaveable { mutableStateOf(initial?.foodType?.takeIf { value -> FoodType.entries.any { it.storageValue == value } } ?: initialType) }
+    var selected by rememberSaveable { mutableStateOf(initial?.productIds.orEmpty()) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var creatingProduct by rememberSaveable { mutableStateOf(false) }
     var createdProducts by remember { mutableStateOf(emptyList<CatalogEntryEntity>()) }
     val isDish = kind == CatalogKind.DISH
     val products = (entries.filter { it.kind == CatalogKind.PRODUCT }.map { it.entry } + initial?.products.orEmpty() + createdProducts)
@@ -62,8 +66,11 @@ fun CatalogEditor(
             } })
         return
     }
-    AlertDialog(
+    AppDialog(
         onDismissRequest = { if (!busy) onDismiss() },
+        busy = busy,
+        hasChanges = name != (initial?.name ?: initialName) || selected != initial?.productIds.orEmpty() ||
+            (isDish && type != (initial?.foodType ?: initialType)),
         title = { Text(when (kind) {
             CatalogKind.DISH -> "Блюдо в справочнике"
             CatalogKind.PRODUCT -> "Продукт в справочнике"
@@ -71,11 +78,12 @@ fun CatalogEditor(
         }) },
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Название") }, modifier = Modifier.fillMaxWidth(), enabled = !busy, isError = name.length > 1000)
+                AppTextField(name, { name = it }, label = { Text("Название") }, modifier = Modifier.fillMaxWidth(), enabled = !busy, isError = name.length > 1000)
                 if (isDish) {
+                    Text("Созданные продукты остаются в справочнике даже при отмене блюда.", style = MaterialTheme.typography.bodySmall)
                     FoodTypePicker(type) { type = it }
                     Text("Состав блюда · выбрано продуктов: ${selected.size}", style = MaterialTheme.typography.titleSmall)
-                    OutlinedTextField(query, { query = it }, label = { Text("Поиск продуктов") },
+                    AppTextField(query, { query = it }, label = { Text("Поиск продуктов") },
                         supportingText = { Text("Введите часть названия и отметьте продукты галочками.") },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !busy)
                     if (matching.isEmpty()) Text("Продукты не найдены.")
@@ -100,7 +108,7 @@ fun CatalogEditor(
         confirmButton = {
             TextButton(enabled = valid && !busy, onClick = { onSave(initial?.id, kind, name, if (isDish) type else "", if (isDish) selected else emptyList()) }) { Text("Сохранить") }
         },
-        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Отмена") } },
+        dismissButton = { AppDismissButton(enabled = !busy) },
     )
 }
 
@@ -111,6 +119,16 @@ data class SelectedCatalogItem(
     val ingredients: List<String> = emptyList(),
     val dosage: String = "",
     val kind: String = CatalogKind.DISH,
+)
+
+private val SelectedItemsSaver = listSaver<List<SelectedCatalogItem>, String>(
+    save = { items -> items.map { item -> JSONObject().put("id", item.id).put("name", item.name)
+        .put("type", item.foodType).put("ingredients", JSONArray(item.ingredients)).put("dose", item.dosage).put("kind", item.kind).toString() } },
+    restore = { rows -> rows.map { row -> JSONObject(row).let { value ->
+        val ingredients = value.getJSONArray("ingredients")
+        SelectedCatalogItem(value.getLong("id"), value.getString("name"), value.getString("type"),
+            List(ingredients.length()) { ingredients.getString(it) }, value.getString("dose"), value.getString("kind"))
+    } } },
 )
 
 @Composable
@@ -124,11 +142,11 @@ fun CatalogEventDialog(
     onCreate: (String, String, String, List<Long>, (CatalogItem) -> Unit) -> Unit,
     onSave: (List<SelectedCatalogItem>) -> Unit,
 ) {
-    var selected by remember { mutableStateOf(initial) }
-    var query by remember { mutableStateOf("") }
-    var foodType by remember { mutableStateOf(FoodType.HOME.storageValue) }
-    var foodKind by remember { mutableStateOf(CatalogKind.DISH) }
-    var creating by remember { mutableStateOf(false) }
+    var selected by rememberSaveable(stateSaver = SelectedItemsSaver) { mutableStateOf(initial) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var foodType by rememberSaveable { mutableStateOf(FoodType.HOME.storageValue) }
+    var foodKind by rememberSaveable { mutableStateOf(CatalogKind.DISH) }
+    var creating by rememberSaveable { mutableStateOf(false) }
     val isDish = kind == CatalogKind.DISH
     if (creating) {
         CatalogEditor(kind = if (isDish) foodKind else kind, initialName = query.trim(), initialType = foodType,
@@ -146,7 +164,7 @@ fun CatalogEventDialog(
     val matching = entries.filter { it.kind == (if (isDish) foodKind else kind) &&
         (!isDish || foodKind == CatalogKind.PRODUCT || it.foodType == foodType || it.foodType == "unknown") && catalogMatches(it, query) }
     val exact = matching.any { it.normalizedName == normalizeName(query) }
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(title) },
+    AppDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(title) }, busy = busy, hasChanges = selected != initial,
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Выбрано: " + selected.size, style = MaterialTheme.typography.titleMedium)
@@ -154,21 +172,21 @@ fun CatalogEventDialog(
                     Column {
                         Text(item.name + if (isDish) " · " + foodItemTypeTitle(item.kind, item.foodType) else "")
                         if (item.ingredients.isNotEmpty()) Text(item.ingredients.joinToString(", "), style = MaterialTheme.typography.bodySmall)
-                        if (!isDish) OutlinedTextField(item.dosage, { value ->
+                        if (!isDish) AppTextField(item.dosage, { value ->
                             selected = selected.map { if (it.id == item.id) it.copy(dosage = value) else it }
-                        }, label = { Text("Дозировка / количество (необязательно)") }, modifier = Modifier.fillMaxWidth())
+                        }, label = { Text("Дозировка / количество (необязательно)") }, modifier = Modifier.fillMaxWidth(), enabled = !busy, isError = item.dosage.length > 1000)
                         TextButton(enabled = !busy, onClick = { selected = selected.filterNot { it.id == item.id } }) { Text("Убрать из события") }
                     }
                     HorizontalDivider()
                 }
                 if (isDish) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(selected = foodKind == CatalogKind.DISH, onClick = { foodKind = CatalogKind.DISH; query = "" }, label = { Text("Блюда") })
                         FilterChip(selected = foodKind == CatalogKind.PRODUCT, onClick = { foodKind = CatalogKind.PRODUCT; query = "" }, label = { Text("Продукты") })
                     }
                     if (foodKind == CatalogKind.DISH) FoodTypePicker(foodType) { foodType = it }
                 }
-                OutlinedTextField(query, { query = it }, label = { Text("Поиск по части названия") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                AppTextField(query, { query = it }, label = { Text("Поиск по части названия") }, modifier = Modifier.fillMaxWidth(), singleLine = true, enabled = !busy)
                 matching.take(40).forEach { entry ->
                     val chosen = selected.any { it.id == entry.id }
                     TextButton(enabled = !chosen && !busy, onClick = {
@@ -182,8 +200,9 @@ fun CatalogEventDialog(
                     Text("Добавить «" + query.trim() + "» в справочник и выбрать")
                 }
                 Text("Событие может включать несколько " + if (isDish) "блюд и продуктов." else "лекарств.")
+                Text("Созданные записи справочника остаются в нём даже при отмене события.", style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(enabled = selected.isNotEmpty() && !busy, onClick = { onSave(selected) }) { Text("Сохранить событие") } },
-        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Отмена") } })
+        confirmButton = { TextButton(enabled = selected.isNotEmpty() && selected.all { it.dosage.length <= 1000 } && !busy, onClick = { onSave(selected) }) { Text("Сохранить событие") } },
+        dismissButton = { AppDismissButton(enabled = !busy) })
 }
