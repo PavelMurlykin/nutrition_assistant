@@ -79,6 +79,8 @@ interface MedicineDao {
 
 @Dao
 interface StoolDao {
+    @Query("SELECT * FROM stools WHERE user_id = :userId AND date = :date ORDER BY id")
+    suspend fun getForDay(userId: Long, date: String): List<StoolEntity>
     @Query("SELECT * FROM stools WHERE user_id = :userId ORDER BY date, id")
     fun observeAll(userId: Long): Flow<List<StoolEntity>>
     @Insert

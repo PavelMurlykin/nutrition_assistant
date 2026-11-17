@@ -44,9 +44,9 @@ The calendar displays six Monday-first weeks, including adjacent months. Arrows 
 
 Food, medication, and toilet icons mark days with saved events. The diary heading shows counts of meals, medication intakes, and toilet visits for the selected day. Multiple dishes in one meal or medicines in one intake count as one event. Edits and deletions update the calendar automatically; an empty day is never assumed symptom-free.
 
-Scrolling the diary up collapses the calendar; returning to the top expands it. Vertical gestures over the calendar also scroll the diary. On short screens or with large system fonts, the calendar scrolls with the diary. «+» opens a choice of breakfast, lunch, dinner, snack, medication intake, or toilet entry. If a primary meal already exists, it opens for editing. Other sections remain available further down the diary. Each section supports adding, editing, and deleting records. Merely viewing a date does not create records.
+Scrolling the diary up collapses the calendar; returning to the top expands it. Vertical gestures over the calendar also scroll the diary. On short screens or with large system fonts, the calendar scrolls with the diary. «+» opens a choice of breakfast, lunch, dinner, snack, medication intake, or toilet entry. Choosing a type always creates a new event; use «Изменить» (Edit) on the required record to change it. Other sections remain available further down the diary. Each section supports adding, editing, and deleting records. Merely viewing a date does not create records.
 
-Breakfast, lunch, and dinner each have one daily record containing multiple dishes. Multiple snacks and medication intakes are supported, as are multiple stool and wellbeing entries. Sleep and water count each have one record per day.
+Multiple breakfasts, lunches, dinners, snacks, and medication intakes can be recorded per day. A meal can contain one dish, one product, or a mixture. Multiple stool and wellbeing entries are also supported. Sleep and water count each have one record per day.
 
 ### Food
 
@@ -77,21 +77,31 @@ An association does not establish a cause. “Without exposure” means the fact
 
 ### Sleep, wellbeing, and water
 
-Enter sleep manually: bedtime on the preceding evening, wake time on the selected day, and a free-text sleep-quality description. The initial 23:00 and 07:00 values are form defaults only; nothing is recorded until saved. Wellbeing uses free text. Water supports −1, +1, and an exact glass count; negative values are disallowed.
+Enter sleep manually with wake-up on the selected day and a free-text quality description. For a new record, bedtime earlier than wake-up belongs to the same day; a later or equal bedtime belongs to the previous day. The specific night dates are stored; time in bed is not treated as actual sleep duration. Legacy records retain unknown night dates. The initial 23:00 and 07:00 values are form defaults only; nothing is recorded until saved. Wellbeing uses free text. Water supports −1, +1, and an exact glass count; negative values are disallowed.
 
 ## Menu: catalogs
 
 Open «Меню» (Menu), marked with a fork and knife icon. The first filter row contains «Блюда» (Dishes), «Продукты» (Products), and «Лекарства» (Medication). For dishes, the second row offers homemade and restaurant food; the store-bought category has been removed. Searching by part of a name dynamically filters the current section.
 
-In Products, add and edit ingredient and individual product names. The catalog initially contains products from sample recipes and former store-bought entries, such as milk, water, yogurt, and bread. Names are limited to 1000 characters; case, extra whitespace, and Russian е/ё differences do not create duplicates.
+In Products, add and edit ingredient and individual product names. The catalog initially contains products from sample recipes and former store-bought entries, such as milk, water, yogurt, and bread. Names are limited to 1000 characters. The simple form reuses a single matching basic entry without a brand or variant label, normalizing case, whitespace, and Russian е/ё. If several such entries match, select one from the list.
 
 To create or edit a dish, enter its name and type, then check products to assemble its composition. «Поиск продуктов» (Product search) filters the list as text changes: for example, «мол» finds «Молоко». Selections persist when the query changes, and a counter shows the selected quantity. Saving a new or edited dish requires at least one product, including restaurant dishes. Some older entries and restaurant examples retain an unknown composition until manually completed.
 
 If a product is missing, enter its name and choose «Добавить продукт … и выбрать» (Add product and select). Create it in the dialog: it immediately joins the composition while existing selections remain. The product stays in the catalog if the dish is canceled. Composition is no longer entered as free text.
 
-Renaming a product updates its name in current recipes. «Убрать из справочника» hides a product from new recipes while preserving existing compositions; editing an existing recipe lets you keep or uncheck that product. Creating the same name restores a hidden entry. Identical dish names are allowed across food types; duplicates within a type are prevented. An exact match selects the existing entry with its current composition.
+Renaming a product updates its name in current recipes. «Убрать из справочника» hides a product from new recipes while preserving existing compositions; editing an existing recipe lets you keep or uncheck that product. Creating the same name restores a hidden entry. The database permits distinct entries with the same name and separate UUIDs. A single exact basic-entry match in the simple form selects the existing entry with its composition.
 
 Catalog edits affect new events. Logged meals retain their original names, types, and compositions, including renamed or removed products. Editing an event retains historical snapshots of its existing selections; create a new event to record an updated recipe.
+
+## New model and current form limitations
+
+In version 0.7.0, new food entries capture a full nested composition snapshot: for example, “cutlet → packaged mince → garlic,” including UUIDs, revisions, sources, composition certainty, and known amounts. Catalog edits and ordinary event edits preserve this snapshot. Unknown composition does not confirm that an ingredient or lactose is absent. Legacy flat ingredients remain unchanged without invented links.
+
+The model and JSON 2 support categories, brands and variants, product compositions, optional positive quantities in grams (`g`), milliliters (`ml`), or pieces (`piece`), comments, actual food/medication/stool time with a UTC offset, and explicit diary completeness. A missing amount differs from zero; units are never converted automatically. Without an actual time, precision is “date only”; creation time never substitutes for event time.
+
+Expanded editors and explicit historical composition refresh are scheduled for stages 5–6. These fields currently work through the model and JSON transfer; simple forms preserve existing additional details during edits. Completeness confirmations default to absent and are not used by the current analysis. Food changes invalidate food completeness; stool or wellbeing changes invalidate symptom completeness. Fixed sleep, stress, activity, and illness scales are not implemented yet.
+
+Export creates JSON 2; import accepts JSON 1–2. Older backups retain UUIDs, comments, and flat history without invented sources, quantities, actual times, or completeness confirmations. Composition is limited to 16 levels and 10,000 expanded nodes per meal; cycles are rejected atomically.
 
 ## Reminders and permission
 
@@ -117,10 +127,10 @@ No additional storage permission is needed. A copy outside the local database ca
 
 ### Import
 
-1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
+1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1 or 2 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
 2. Review «Проверка импорта» (Import preview): object counts, additions, matches, and conflicts. History merges into the current personal diary; the database is not cleared.
-3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local composition and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. To store distinct products separately, distinguish their names first: this version does not support same-name variants within a catalog section/food type.
-4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water and sleep records on the same date also remain. Long lists show the first 100 details of each kind and the total count.
+3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local composition and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. Transfer matching also includes basic product/variant, brand, and variant label. If this combination is ambiguous in either catalog, entries remain separate without name-based merging.
+4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water, sleep, and day-completeness records on the same date also remain; importing new observations invalidates the corresponding previous confirmation. Long lists show the first 100 details of each kind and the total count.
 5. Optionally select «Восстановить настройки напоминаний из файла» (Restore reminder settings from file). Current settings remain by default. Enable this option for full restoration on a new device.
 6. Tap «Применить импорт» (Apply import) and wait for the result. «Отмена» (Cancel) closes the preview without changing the diary.
 
@@ -132,7 +142,7 @@ The preview and prepared backup survive screen recreation within the current pro
 
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 preserve events and reminder settings. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 preserve events and reminder settings. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
 
 Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 

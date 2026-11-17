@@ -41,11 +41,11 @@ interface CatalogDao {
     @Insert suspend fun insertProducts(products: List<DishProductEntity>)
     @Query("SELECT * FROM catalog WHERE id = :id")
     suspend fun get(id: Long): CatalogEntryEntity?
-    @Query("SELECT * FROM catalog WHERE kind = :kind AND food_type = :foodType AND normalized_name = :name")
+    @Query("SELECT * FROM catalog WHERE kind = :kind AND food_type = :foodType AND normalized_name = :name AND product_kind = 'basic' AND brand = '' AND variant_label = '' ORDER BY id LIMIT 1")
     suspend fun find(kind: String, foodType: String, name: String): CatalogEntryEntity?
     @Insert suspend fun insert(entry: CatalogEntryEntity): Long
     @Update suspend fun update(entry: CatalogEntryEntity)
-    @Query("UPDATE catalog SET archived = 1 WHERE id = :id")
+    @Query("UPDATE catalog SET archived = 1, revision = revision + 1 WHERE id = :id AND revision < 2147483647")
     suspend fun archive(id: Long)
     @Insert suspend fun insertMealItems(items: List<MealItemEntity>)
     @Insert suspend fun insertMedicineItems(items: List<MedicineItemEntity>)
@@ -57,4 +57,9 @@ interface CatalogDao {
     fun observeMeals(userId: Long): Flow<List<MealWithItems>>
     @Transaction @Query("SELECT * FROM medicines WHERE user_id = :userId ORDER BY date, id")
     fun observeMedicines(userId: Long): Flow<List<MedicineWithItems>>
+    @Query("SELECT * FROM catalog ORDER BY id") suspend fun allEntries(): List<CatalogEntryEntity>
+    @Query("SELECT * FROM dish_products ORDER BY dish_id, position, product_id") suspend fun allDishProducts(): List<DishProductEntity>
+    @Query("SELECT * FROM product_components ORDER BY owner_id, position, product_id") suspend fun allProductComponents(): List<ProductComponentEntity>
+    @Query("DELETE FROM product_components WHERE owner_id = :id") suspend fun clearComponents(id: Long)
+    @Insert suspend fun insertComponents(items: List<ProductComponentEntity>)
 }

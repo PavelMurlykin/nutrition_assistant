@@ -24,8 +24,10 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         MedicineItemEntity::class,
         DishProductEntity::class,
         BackupAliasEntity::class,
+        ProductComponentEntity::class,
+        DayStatusEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(IngredientConverters::class)
@@ -39,8 +41,43 @@ abstract class NutritionDatabase : RoomDatabase() {
     abstract fun waterDao(): WaterDao
     abstract fun sleepDao(): SleepDao
     abstract fun notificationLogDao(): NotificationLogDao
+    abstract fun dayStatusDao(): DayStatusDao
 
     companion object {
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX index_catalog_kind_food_type_normalized_name")
+                db.execSQL("CREATE INDEX index_catalog_kind_food_type_normalized_name ON catalog (kind, food_type, normalized_name)")
+                listOf("category_code TEXT DEFAULT NULL", "product_kind TEXT NOT NULL DEFAULT 'basic'", "brand TEXT NOT NULL DEFAULT ''",
+                    "variant_label TEXT NOT NULL DEFAULT ''", "composition_state TEXT NOT NULL DEFAULT 'unknown'", "composition_source TEXT DEFAULT NULL",
+                    "composition_checked_on TEXT DEFAULT NULL", "comment TEXT DEFAULT NULL", "revision INTEGER NOT NULL DEFAULT 1").forEach {
+                    db.execSQL("ALTER TABLE catalog ADD COLUMN $it")
+                }
+                listOf("quantity TEXT DEFAULT NULL", "unit TEXT DEFAULT NULL", "position INTEGER NOT NULL DEFAULT 0").forEach {
+                    db.execSQL("ALTER TABLE dish_products ADD COLUMN $it")
+                }
+                db.execSQL("UPDATE dish_products SET position = (SELECT COUNT(*) FROM dish_products AS preceding WHERE preceding.dish_id = dish_products.dish_id AND preceding.product_id < dish_products.product_id)")
+                db.execSQL("CREATE TABLE product_components (owner_id INTEGER NOT NULL, product_id INTEGER NOT NULL, quantity TEXT DEFAULT NULL, unit TEXT DEFAULT NULL, position INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(owner_id, product_id), FOREIGN KEY(owner_id) REFERENCES catalog(id) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(product_id) REFERENCES catalog(id) ON UPDATE NO ACTION ON DELETE NO ACTION)")
+                db.execSQL("CREATE INDEX index_product_components_product_id ON product_components (product_id)")
+                listOf("meals", "medicines", "stools").forEach { table ->
+                    listOf("actual_time TEXT DEFAULT NULL", "utc_offset TEXT DEFAULT NULL", "time_zone TEXT DEFAULT NULL",
+                        "time_precision TEXT NOT NULL DEFAULT 'date_only'", "comment TEXT DEFAULT NULL").forEach {
+                        db.execSQL("ALTER TABLE $table ADD COLUMN $it")
+                    }
+                }
+                listOf("meal_items", "medicine_items").forEach { table ->
+                    listOf("source_revision INTEGER DEFAULT NULL", "quantity TEXT DEFAULT NULL", "unit TEXT DEFAULT NULL", "comment TEXT DEFAULT NULL").forEach {
+                        db.execSQL("ALTER TABLE $table ADD COLUMN $it")
+                    }
+                }
+                db.execSQL("ALTER TABLE meal_items ADD COLUMN composition_snapshot TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE sleeps ADD COLUMN bed_date TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE sleeps ADD COLUMN wakeup_date TEXT DEFAULT NULL")
+                db.execSQL("CREATE TABLE day_status (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, date TEXT NOT NULL, food_complete INTEGER NOT NULL DEFAULT 0, symptoms_complete INTEGER NOT NULL DEFAULT 0, stool_summary TEXT DEFAULT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL)")
+                db.execSQL("CREATE UNIQUE INDEX index_day_status_user_id_date ON day_status (user_id, date)")
+                db.execSQL("CREATE UNIQUE INDEX index_day_status_public_id ON day_status (public_id)")
+            }
+        }
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 listOf("users", "catalog", "meals", "medicines", "stools", "feelings", "water", "sleeps", "meal_items", "medicine_items").forEach { table ->
@@ -97,6 +134,6 @@ abstract class NutritionDatabase : RoomDatabase() {
                 context,
                 NutritionDatabase::class.java,
                 "nutrition_assistant.db",
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
     }
 }

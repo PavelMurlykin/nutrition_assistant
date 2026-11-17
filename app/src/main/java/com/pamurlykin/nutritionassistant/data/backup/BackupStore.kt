@@ -3,6 +3,7 @@ package com.pamurlykin.nutritionassistant.data.backup
 import androidx.room.withTransaction
 import com.pamurlykin.nutritionassistant.data.local.NutritionDatabase
 import org.json.JSONArray
+import com.pamurlykin.nutritionassistant.data.model.JsonValues
 import java.time.Instant
 
 data class ImportOptions(val keepLocalConflicts: Boolean = false, val matchCatalog: Boolean = false, val restoreSettings: Boolean = false,
@@ -43,12 +44,12 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
         fun resolve(id: String): String = mapping[id] ?: id
         current.additions.forEach { record ->
             val schema = BackupSchema.tables.getValue(record.type)
-            val columns = listOf("public_id") + schema.fields.keys.filter { it !in setOf("product_ids", "position") }
+            val columns = listOf("public_id") + schema.fields.keys.filter { it !in setOf("component_links", "position") }
             val values = listOf<Any?>(record.publicId) + columns.drop(1).map { column ->
                 val value = record.values[column]
                 when (schema.fields.getValue(column)) {
                     ValueKind.REFERENCE -> requireNotNull(localIds[resolve(value as String)]) { "Не найдена ссылка для импорта." }
-                    ValueKind.STRINGS -> BackupCodec.canonical(value)
+                    ValueKind.STRINGS, ValueKind.SNAPSHOT -> value?.let { BackupCodec.canonical(it) }
                     ValueKind.BOOLEAN -> if (value == true) 1L else 0L
                     else -> value
                 }
@@ -64,21 +65,25 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
         catalogToWrite.forEach { record ->
             val targetId = localIds.getValue(resolve(record.publicId))
             if (record.publicId !in newCatalogIds) {
-                val fields = BackupSchema.tables.getValue("catalog").fields.keys.filter { it != "product_ids" }
+                val fields = BackupSchema.tables.getValue("catalog").fields.keys.filter { it != "component_links" }
                 val args = fields.map { key ->
                     val value = record.values[key]
                     when (BackupSchema.tables.getValue("catalog").fields[key]) {
-                        ValueKind.STRINGS -> BackupCodec.canonical(value)
+                        ValueKind.STRINGS, ValueKind.SNAPSHOT -> value?.let { BackupCodec.canonical(it) }
                         ValueKind.BOOLEAN -> if (value == true) 1L else 0L
                         else -> value
                     }
                 } + targetId
                 db.execSQL("UPDATE catalog SET ${fields.joinToString(",") { "$it = ?" }} WHERE id = ?", args.toTypedArray())
                 db.execSQL("DELETE FROM dish_products WHERE dish_id = ?", arrayOf(targetId))
+                db.execSQL("DELETE FROM product_components WHERE owner_id = ?", arrayOf(targetId))
             }
-            (record.values.getValue("product_ids") as List<*>).forEach { product ->
-                db.execSQL("INSERT INTO dish_products (dish_id, product_id) VALUES (?, ?)",
-                    arrayOf(targetId, localIds.getValue(resolve(product as String))))
+            val table = if (record.values["kind"] == "product") "product_components" else "dish_products"
+            val owner = if (table == "product_components") "owner_id" else "dish_id"
+            (record.values.getValue("component_links") as List<*>).forEach { value ->
+                val link = value as Map<*, *>
+                db.execSQL("INSERT INTO $table ($owner, product_id, quantity, unit, position) VALUES (?, ?, ?, ?, ?)",
+                    arrayOf(targetId, localIds.getValue(resolve(link["product_id"] as String)), link["quantity"], link["unit"], link["position"]))
             }
         }
         current.aliases.forEach { alias -> db.execSQL("INSERT OR REPLACE INTO backup_aliases (source_id, target_id, type) VALUES (?, ?, ?)", arrayOf(alias.sourceId, alias.targetId, alias.type)) }
@@ -88,6 +93,16 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
             val args = fields.map { key -> source.values[key].let { if (it is Boolean) if (it) 1L else 0L else it } } + 1L
             db.execSQL("UPDATE users SET ${fields.joinToString(",") { "$it = ?" }} WHERE user_id = ?", args.toTypedArray())
         }
+        // New observations invalidate confirmations of existing local days. Imported new confirmations are validated below.
+        current.additions.filter { it.type in setOf("meals", "stools", "feelings") }.forEach { event ->
+            val oldStatus = local.records.find { it.type == "day_status" && it.values["date"] == event.values["date"] }
+            if (oldStatus != null) {
+                val fields = if (event.type == "meals") "food_complete = 0" else "symptoms_complete = 0, stool_summary = NULL"
+                db.execSQL("UPDATE day_status SET $fields, updated_at = ? WHERE public_id = ?", arrayOf(java.time.LocalDateTime.now().toString(), oldStatus.publicId))
+            }
+        }
+        // Validate the resulting graph too: aliases and preserved local links can create a cycle after individually valid files merge.
+        BackupCodec.validate(snapshotInTransaction())
         // Raw SQL participates in Room's transaction/invalidation triggers. No application data is cleared.
     }
 
@@ -100,10 +115,14 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
                 while (cursor.moveToNext()) references[table to cursor.getLong(0)] = cursor.getString(1)
             }
         }
-        val products = mutableMapOf<Long, MutableList<String>>()
-        db.query("SELECT dish_id, product_id FROM dish_products ORDER BY product_id").use { cursor ->
-            while (cursor.moveToNext()) products.getOrPut(cursor.getLong(0)) { mutableListOf() }
-                .add(references.getValue("catalog" to cursor.getLong(1)))
+        val products = mutableMapOf<Long, MutableList<Map<String, Any?>>>()
+        listOf("dish_products" to "dish_id", "product_components" to "owner_id").forEach { (table, owner) ->
+            db.query("SELECT $owner, product_id, quantity, unit, position FROM $table ORDER BY position, product_id").use { cursor ->
+                while (cursor.moveToNext()) products.getOrPut(cursor.getLong(0)) { mutableListOf() }.add(mapOf(
+                    "product_id" to references.getValue("catalog" to cursor.getLong(1)),
+                    "quantity" to if (cursor.isNull(2)) null else cursor.getString(2),
+                    "unit" to if (cursor.isNull(3)) null else cursor.getString(3), "position" to cursor.getLong(4)))
+            }
         }
         BackupSchema.tables.forEach { (table, schema) ->
             val positions = mutableMapOf<Long, Long>()
@@ -115,14 +134,15 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
                         positions.getOrDefault(parentId, 0L).also { positions[parentId] = it + 1 }
                     } else 0L
                     val values = schema.fields.mapValues { (key, kind) ->
-                        if (key == "product_ids") products[id].orEmpty().sorted()
+                        if (key == "component_links") products[id].orEmpty()
                         else if (key == "position") position
                         else {
                             val index = cursor.getColumnIndexOrThrow(key)
                             if (cursor.isNull(index)) null else when (kind) {
-                                ValueKind.INTEGER -> cursor.getLong(index)
+                                ValueKind.INTEGER, ValueKind.OPTIONAL_INTEGER -> cursor.getLong(index)
                                 ValueKind.BOOLEAN -> { val value = cursor.getLong(index); require(value in 0..1); value == 1L }
                                 ValueKind.REFERENCE -> references.getValue(BackupSchema.referenceTable(key) to cursor.getLong(index))
+                                ValueKind.SNAPSHOT -> JsonValues.readObject(cursor.getString(index))
                                 ValueKind.STRINGS -> JSONArray(cursor.getString(index)).let { array -> List(array.length()) { array.getString(it) } }
                                 else -> cursor.getString(index)
                             }
@@ -174,22 +194,28 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
         mapping[sourceUser.publicId] = localUser.publicId
         val catalogMatches = mutableListOf<ImportIssue>()
         val conflicts = mutableListOf<ImportIssue>()
-        val catalogByKey = localByType["catalog"].orEmpty().associateBy { catalogKey(it) }
+        val catalogByKey = localByType["catalog"].orEmpty().groupBy { catalogKey(it) }
+        val fileCatalogByKey = fileByType["catalog"].orEmpty().groupBy { catalogKey(it) }
         fileByType["catalog"].orEmpty().forEach { record ->
-            if (record.publicId !in mapping) catalogByKey[catalogKey(record)]?.let { target ->
+            if (record.publicId !in mapping && fileCatalogByKey[catalogKey(record)]?.size == 1)
+                catalogByKey[catalogKey(record)]?.singleOrNull()?.let { target ->
                 mapping[record.publicId] = target.publicId
                 catalogMatches += ImportIssue(record.values["name"].toString(), "Совпало название и раздел. По умолчанию сохраняются локальные состав и архив. Их восстановление выбирается отдельно ниже; история сохраняет свои снимки.")
             }
             mapping[record.publicId]?.let { require(byId.getValue(it).values["kind"] == record.values["kind"]) { "UUID изменяет раздел справочника." } }
         }
-        val dailyByKey = local.records.filter { it.type in setOf("water", "sleeps") }.associateBy { it.type to it.values["date"] }
-        file.records.filter { it.type in setOf("water", "sleeps") && it.publicId !in mapping }.forEach { record ->
+        val catalogTargets = fileByType["catalog"].orEmpty().mapNotNull { mapping[it.publicId] }
+        require(catalogTargets.distinct().size == catalogTargets.size) { "Две позиции файла сопоставлены с одной записью справочника. Импорт остановлен." }
+        val dailyByKey = local.records.filter { it.type in setOf("water", "sleeps", "day_status") }.associateBy { it.type to it.values["date"] }
+        file.records.filter { it.type in setOf("water", "sleeps", "day_status") && it.publicId !in mapping }.forEach { record ->
             dailyByKey[record.type to record.values["date"]]?.let { mapping[record.publicId] = it.publicId }
         }
         fun mappedValues(record: BackupRecord): Map<String, Any?> = record.values.mapValues { (key, value) ->
             when (BackupSchema.tables.getValue(record.type).fields[key]) {
                 ValueKind.REFERENCE -> mapping[value] ?: value
                 ValueKind.REFERENCES -> (value as List<*>).map { mapping[it] ?: it }.sortedBy { it.toString() }
+                ValueKind.COMPONENTS -> (value as List<*>).map { row -> (row as Map<*, *>).entries.associate { (k, v) ->
+                    k as String to if (k == "product_id") mapping[v] ?: v else v } }
                 else -> value
             }
         }
@@ -240,7 +266,7 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
             settingsKeys.any { sourceUser.values[it] != localUser.values[it] }, file.records.size - additions.size)
     }
 
-    private fun catalogKey(record: BackupRecord): List<Any?> = listOf(record.values["kind"], record.values["food_type"], record.values["normalized_name"])
+    private fun catalogKey(record: BackupRecord): List<Any?> = listOf(record.values["kind"], record.values["food_type"], record.values["normalized_name"], record.values["product_kind"], record.values["brand"], record.values["variant_label"])
     private fun bind(statement: androidx.sqlite.db.SupportSQLiteStatement, index: Int, value: Any?) {
         when (value) { null -> statement.bindNull(index); is Long -> statement.bindLong(index, value); is String -> statement.bindString(index, value); else -> error("Unsupported SQL value") }
     }
@@ -249,5 +275,5 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
 fun tableTitle(type: String): String = when (type) {
     "users" -> "Настройки"; "catalog" -> "Справочник"; "meals" -> "Приёмы пищи"; "medicines" -> "Приёмы лекарств"
     "stools" -> "Стул"; "feelings" -> "Самочувствие"; "water" -> "Вода"; "sleeps" -> "Сон"
-    "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
+    "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
 }

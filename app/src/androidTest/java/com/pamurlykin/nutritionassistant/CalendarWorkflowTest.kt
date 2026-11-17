@@ -14,6 +14,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pamurlykin.nutritionassistant.util.StorageFormats
 import com.pamurlykin.nutritionassistant.ui.NutritionAssistantApp
 import com.pamurlykin.nutritionassistant.ui.theme.NutritionAssistantTheme
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import com.pamurlykin.nutritionassistant.data.model.MealType
+import org.junit.Assert.*
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -116,6 +120,33 @@ class CalendarWorkflowTest {
         compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-snack"))
         compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack"))).assertIsDisplayed()
         compose.activityRule.scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+    }
+
+    @Test fun addingBreakfastFromPlusCreatesSecondEventWithoutEditingFirst() {
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("month-calendar").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Сегодня").performClick()
+        val repo = (compose.activity.application as NutritionAssistantApplication).container.repository
+        val day = LocalDate.now().toString()
+        val product = runBlocking { repo.saveCatalogEntry(null, "product", "UI повторный завтрак", "", emptyList()) }
+        val originalIds = runBlocking { repo.observeDailyStats(1, day).first().meals.map { it.event.id }.toSet() }
+        try {
+            runBlocking { repo.saveMeal(day, MealType.BREAKFAST, null, listOf(product.id)) }
+            val before = runBlocking { repo.observeDailyStats(1, day).first().meals }
+            compose.onNodeWithContentDescription("Добавить запись").performClick()
+            compose.onNode(hasText("Завтрак") and hasAnyAncestor(isDialog())).performClick()
+            compose.onNodeWithText("Выбрано: 0").assertExists()
+            compose.onNodeWithText("Продукты").performClick()
+            compose.onNodeWithText("Поиск по части названия").performTextInput(product.name)
+            compose.onNode(hasText(product.name) and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button)).performScrollTo().performClick()
+            compose.onNodeWithText("Сохранить событие").performClick()
+            compose.waitUntil(10_000) { runBlocking { repo.observeDailyStats(1, day).first().meals.size == before.size + 1 } }
+            val after = runBlocking { repo.observeDailyStats(1, day).first().meals }
+            before.forEach { old -> assertEquals(old, after.single { it.event.id == old.event.id }) }
+            compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-breakfast"))
+            compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-breakfast"))).assertExists()
+        } finally {
+            runBlocking { repo.observeDailyStats(1, day).first().meals.filter { it.event.id !in originalIds }.forEach { repo.deleteMeal(1, it.event.id) } }
+        }
     }
 
     private fun capture(name: String) {

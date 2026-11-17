@@ -59,7 +59,7 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                         }
                         Actions(busy, { openDialog(DailyDialog.Meal(type, event)) }, { viewModel.deleteMeal(event.event.id) })
                     }
-                    if (!type.isPrimary || events.isEmpty()) TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Meal(type, null)) }) { Text("Добавить") }
+                    TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Meal(type, null)) }) { Text("Добавить") }
                 }
             }
             item {
@@ -128,9 +128,8 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
             title = { Text("Добавить запись") },
             text = { Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                 MealType.entries.forEach { type ->
-                    val existing = if (type.isPrimary) snapshot.meals.firstOrNull { it.event.mealType == type.storageValue } else null
-                    TextButton(onClick = { openDialog(DailyDialog.Meal(type, existing)) }) {
-                        Text(type.title + if (existing != null) " · изменить" else "")
+                    TextButton(onClick = { openDialog(DailyDialog.Meal(type, null)) }) {
+                        Text(type.title)
                     }
                 }
                 TextButton(onClick = { openDialog(DailyDialog.Medicine(null)) }) { Text("Прием лекарств") }

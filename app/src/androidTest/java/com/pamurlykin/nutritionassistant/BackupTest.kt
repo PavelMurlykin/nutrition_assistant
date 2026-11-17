@@ -118,7 +118,7 @@ class BackupTest {
         val file = BackupCodec.decode(store.export())
         targetStore.apply(targetStore.preview(file), approved)
         val changed = file.copy(records = file.records.map {
-            if (it.type == "meal_items") it.copy(values = it.values + ("name" to "Изменённый снимок")) else it
+            if (it.type == "meal_items") it.copy(values = it.values + ("comment" to "Изменённый комментарий позиции")) else it
         })
         val preview = targetStore.preview(changed)
         assertEquals(1, preview.conflicts.size)
@@ -153,7 +153,7 @@ class BackupTest {
         val bytes = store.export()
         val text = bytes.toString(Charsets.UTF_8)
         val unknown = JSONObject(text).put("unexpected", true).toString()
-        val wrongVersion = JSONObject(text).put("schemaVersion", 2).toString()
+        val wrongVersion = JSONObject(text).put("schemaVersion", 3).toString()
         val duplicate = text.replaceFirst("{", "{\"schemaVersion\":1,")
         val trailing = "$text {}"
         val invalidDate = text.replace(day, "2026-02-30")

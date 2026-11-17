@@ -15,6 +15,8 @@ class NutritionRepository(private val database: NutritionDatabase) {
     private val water = database.waterDao()
     private val sleeps = database.sleepDao()
     private val catalog = database.catalogDao()
+    private val dayStatus = database.dayStatusDao()
+    val foodCatalog = FoodCatalog(database)
 
     suspend fun ensureUser(userId: Long = LocalUserDefaults.USER_ID) {
         users.insert(UserEntity(userId = userId))
@@ -36,7 +38,7 @@ class NutritionRepository(private val database: NutritionDatabase) {
             ).forEach { (name, type, ingredients) ->
                 val id = catalog.insert(CatalogEntryEntity(kind = CatalogKind.DISH, name = name,
                     normalizedName = normalizeName(name), foodType = type.storageValue))
-                catalog.insertProducts(ingredients.map { DishProductEntity(id, product(it).id) })
+                catalog.insertProducts(ingredients.mapIndexed { position, name -> DishProductEntity(id, product(name).id, position = position) })
             }
         }
         // Preserve old free-text records as one catalog item; never guess their type or ingredients.
@@ -80,37 +82,13 @@ class NutritionRepository(private val database: NutritionDatabase) {
     }
 
     suspend fun saveCatalogEntry(id: Long?, kind: String, name: String, type: String, productIds: List<Long>): CatalogItem =
-        database.withTransaction {
-            require(kind in listOf(CatalogKind.DISH, CatalogKind.PRODUCT, CatalogKind.MEDICINE))
-            val cleanName = validateText(name)
-            val cleanType = if (kind != CatalogKind.DISH) "" else type.also {
-                require(FoodType.entries.any { food -> food.storageValue == it }) { "Выберите тип еды." }
-            }
-            if (id != null) require(requireNotNull(catalog.get(id)) { "Запись не найдена." }.kind == kind) { "Нельзя изменить раздел записи." }
-            val selected = productIds.distinct()
-            require(kind != CatalogKind.DISH || selected.isNotEmpty()) { "Выберите хотя бы один продукт для блюда." }
-            require(kind == CatalogKind.DISH || selected.isEmpty()) { "Состав можно задать только блюду." }
-            val previous = id?.let { catalog.productIds(it) }.orEmpty()
-            selected.forEach { productId ->
-                val entry = requireNotNull(catalog.get(productId)) { "Продукт не найден." }
-                require(entry.kind == CatalogKind.PRODUCT && (!entry.archived || productId in previous)) { "Продукт убран из справочника. Выберите другой." }
-            }
-            val duplicate = catalog.find(kind, cleanType, normalizeName(cleanName))
-            if (id == null && duplicate != null) {
-                if (duplicate.archived) catalog.update(duplicate.copy(archived = false))
-                return@withTransaction requireNotNull(catalog.getItem(duplicate.id))
-            }
-            require(duplicate == null || duplicate.id == id) { "Такое название уже есть в этом справочнике." }
-            val entry = CatalogEntryEntity(id = id ?: 0, kind = kind, name = cleanName,
-                normalizedName = normalizeName(cleanName), foodType = cleanType,
-                publicId = id?.let { catalog.get(it)?.publicId } ?: java.util.UUID.randomUUID().toString())
-            val entryId = if (id == null) catalog.insert(entry) else id.also { catalog.update(entry) }
-            catalog.clearProducts(entryId)
-            catalog.insertProducts(selected.map { DishProductEntity(entryId, it) })
-            requireNotNull(catalog.getItem(entryId))
-        }
+        foodCatalog.saveBasic(id, kind, name, type, productIds)
 
-    suspend fun archiveCatalogEntry(id: Long) = catalog.archive(id)
+    suspend fun archiveCatalogEntry(id: Long) = database.withTransaction {
+        val old = requireNotNull(catalog.get(id))
+        require(old.revision < Int.MAX_VALUE) { "Нельзя увеличить версию записи." }
+        catalog.archive(id)
+    }
 
     fun observeCalendarCounts(start: String, end: String): Flow<List<CalendarDayCounts>> = flow {
         initialize()
@@ -144,41 +122,60 @@ class NutritionRepository(private val database: NutritionDatabase) {
         val foodHistory = catalog.observeMeals(userId)
         val stoolHistory = stools.observeAll(userId)
         emitAll(combine(observeUser(), foodHistory, catalog.observeMedicines(userId), stoolHistory,
-            feelings.observeForDay(userId, date), water.observeForDay(userId, date), sleeps.observeForDay(userId, date)) { args ->
+            feelings.observeForDay(userId, date), water.observeForDay(userId, date), sleeps.observeForDay(userId, date), dayStatus.observe(userId, date)) { args ->
             val allMeals = args[1] as List<MealWithItems>
             val allStools = args[3] as List<StoolEntity>
             DailyStatsSnapshot(date, args[0] as UserEntity, allMeals.filter { it.event.date == date },
                 (args[2] as List<MedicineWithItems>).filter { it.event.date == date },
                 allStools.filter { it.date == date }, args[4] as List<FeelingEntity>,
                 (args[5] as WaterEntity?)?.glassesCount ?: 0, args[6] as SleepEntity?,
-                StoolAnalyzer.analyze(date, allMeals, allStools))
+                StoolAnalyzer.analyze(date, allMeals, allStools), args[7] as DayStatusEntity?)
         })
     }
 
-    suspend fun saveMeal(date: String, type: MealType, id: Long?, catalogIds: List<Long>) = database.withTransaction {
-        require(catalogIds.isNotEmpty()) { "Выберите хотя бы одно блюдо." }
+    suspend fun saveMeal(date: String, type: MealType, id: Long?, catalogIds: List<Long>,
+                         context: EventContext? = null, portions: Map<Long, Portion> = emptyMap(),
+                         comments: Map<Long, String?> = emptyMap(), refreshComposition: Set<Long> = emptySet()) = database.withTransaction {
+        validateDay(date)
+        require(catalogIds.isNotEmpty()) { "Выберите хотя бы одно блюдо или продукт." }
+        val ids = catalogIds.distinct()
+        require((portions.keys + comments.keys + refreshComposition).all { it in ids })
         val existing = id?.let { requireNotNull(meals.getById(it)) }
-            ?: if (type.isPrimary) meals.getPrimaryMeal(LocalUserDefaults.USER_ID, date, type.storageValue) else null
         if (existing != null) require(existing.userId == LocalUserDefaults.USER_ID && existing.date == date)
         val oldItems = existing?.let { catalog.mealItems(it.id) }.orEmpty()
-        val selected = catalogIds.distinct().map { catalogId ->
-            oldItems.find { it.catalogId == catalogId }?.copy(id = 0) ?: run {
-                val entry = requireNotNull(catalog.getItem(catalogId))
-                require(entry.kind in listOf(CatalogKind.DISH, CatalogKind.PRODUCT) && !entry.archived) { "Блюдо или продукт убраны из справочника." }
-                MealItemEntity(mealId = 0, catalogId = entry.id, name = entry.name, foodType = entry.foodType,
-                    ingredients = entry.ingredients, kind = entry.kind)
+        val toCapture = ids.filter { selected -> oldItems.none { it.catalogId == selected } || selected in refreshComposition }
+        val snapshots = foodCatalog.snapshots(toCapture)
+        val selected = ids.map { catalogId ->
+            val old = oldItems.find { it.catalogId == catalogId }
+            val item = if (old != null && catalogId !in refreshComposition) old.copy(id = 0) else {
+                val entry = requireNotNull(catalog.get(catalogId))
+                require(!entry.archived || old != null) { "Блюдо или продукт убраны из справочника." }
+                val snapshot = snapshots.getValue(catalogId)
+                MealItemEntity(mealId = 0, catalogId = catalogId, name = entry.name, foodType = entry.foodType,
+                    ingredients = snapshot.ingredientNames(), kind = entry.kind,
+                    sourceRevision = entry.revision, compositionSnapshot = CompositionSnapshot.encode(snapshot),
+                    publicId = old?.publicId ?: java.util.UUID.randomUUID().toString(),
+                    quantity = old?.quantity, unit = old?.unit, comment = old?.comment)
             }
+            val amount = (portions[catalogId] ?: Portion(item.quantity, item.unit)).validated()
+            item.copy(quantity = amount.quantity, unit = amount.unit,
+                comment = if (catalogId in comments) cleanComment(comments[catalogId]) else item.comment)
         }
-        val event = MealEntity(id = existing?.id ?: 0, userId = LocalUserDefaults.USER_ID, date = date,
-            mealType = type.storageValue, description = selected.joinToString("; ") { it.name },
-            createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp(),
-            publicId = existing?.publicId ?: java.util.UUID.randomUUID().toString())
+        val expandedSize = selected.sumOf { item -> item.compositionSnapshot?.let { CompositionSnapshot.decode(it).nodeCount() } ?: 1L }
+        require(expandedSize <= CompositionGraph.MAX_NODES) { "Приём пищи содержит более 10 000 узлов состава." }
+        val details = (context ?: EventContext(existing?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), existing?.comment)).validated(date)
+        val event = (existing ?: MealEntity(userId = LocalUserDefaults.USER_ID, date = date, mealType = type.storageValue, description = "")).copy(
+            mealType = type.storageValue, description = selected.joinToString("; ") { it.name }, updatedAt = StorageFormats.nowTimestamp(),
+            actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
+            timePrecision = details.recordedTime.precision, comment = details.comment)
         val eventId = if (existing == null) meals.insert(event) else existing.id.also { meals.update(event) }
         catalog.clearMeal(eventId)
         catalog.insertMealItems(selected.map { it.copy(mealId = eventId) })
+        dayStatus.invalidateFood(LocalUserDefaults.USER_ID, date, StorageFormats.nowTimestamp())
     }
 
-    suspend fun saveMedicines(date: String, id: Long?, selections: List<MedicineSelection>) = database.withTransaction {
+    suspend fun saveMedicines(date: String, id: Long?, selections: List<MedicineSelection>, context: EventContext? = null) = database.withTransaction {
+        validateDay(date)
         require(selections.isNotEmpty()) { "Выберите хотя бы одно лекарство." }
         val existing = id?.let { requireNotNull(medicines.getById(it)) }
         if (existing != null) require(existing.userId == LocalUserDefaults.USER_ID && existing.date == date)
@@ -187,39 +184,80 @@ class NutritionRepository(private val database: NutritionDatabase) {
             val old = oldItems.find { it.catalogId == selection.catalogId }
             val entry = requireNotNull(catalog.get(selection.catalogId))
             require(entry.kind == CatalogKind.MEDICINE && (!entry.archived || old != null)) { "Лекарство удалено из справочника." }
-            val dosage = selection.dosage.trim().ifBlank { null }
-            require((dosage?.length ?: 0) <= 1000) { "Слишком длинная дозировка." }
-            MedicineItemEntity(medicineId = 0, catalogId = entry.id, name = old?.name ?: entry.name, dosage = dosage,
-                publicId = old?.publicId ?: java.util.UUID.randomUUID().toString())
+            val dosage = cleanComment(selection.dosage)
+            val amount = (selection.portion ?: Portion(old?.quantity, old?.unit)).validated()
+            (old ?: MedicineItemEntity(medicineId = 0, catalogId = entry.id, name = entry.name, dosage = null, sourceRevision = entry.revision))
+                .copy(id = 0, dosage = dosage, quantity = amount.quantity, unit = amount.unit,
+                    comment = if (selection.updateComment) cleanComment(selection.comment) else old?.comment)
         }
-        val event = MedicineEntity(id = existing?.id ?: 0, userId = LocalUserDefaults.USER_ID, date = date,
-            name = selected.joinToString("; ") { it.name }, dosage = null, createdAt = existing?.createdAt ?: StorageFormats.nowTimestamp(),
-            publicId = existing?.publicId ?: java.util.UUID.randomUUID().toString())
+        val details = (context ?: EventContext(existing?.let { RecordedTime(it.actualTime, it.utcOffset, it.timeZone) } ?: RecordedTime(), existing?.comment)).validated(date)
+        val event = (existing ?: MedicineEntity(userId = LocalUserDefaults.USER_ID, date = date, name = "", dosage = null)).copy(
+            name = selected.joinToString("; ") { it.name }, updatedAt = StorageFormats.nowTimestamp(),
+            actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
+            timePrecision = details.recordedTime.precision, comment = details.comment)
         val eventId = if (existing == null) medicines.insert(event) else existing.id.also { medicines.update(event) }
         catalog.clearMedicine(eventId)
         catalog.insertMedicineItems(selected.map { it.copy(medicineId = eventId) })
     }
 
-    suspend fun deleteMeal(userId: Long, id: Long) = meals.deleteById(userId, id)
-    suspend fun deleteMedicine(userId: Long, id: Long) = medicines.deleteById(userId, id)
-    suspend fun addStool(userId: Long, date: String, quality: Int) {
-        stools.insert(StoolEntity(userId = userId, date = date, quality = validateStoolQuality(quality)))
+    suspend fun deleteMeal(userId: Long, id: Long) = database.withTransaction {
+        val old = meals.getById(id)
+        meals.deleteById(userId, id)
+        if (old?.userId == userId) dayStatus.invalidateFood(userId, old.date, StorageFormats.nowTimestamp())
     }
-    suspend fun updateStool(userId: Long, id: Long, quality: Int) {
+    suspend fun deleteMedicine(userId: Long, id: Long) = medicines.deleteById(userId, id)
+    suspend fun addStool(userId: Long, date: String, quality: Int, context: EventContext = EventContext()) = database.withTransaction {
+        val details = context.validated(date)
+        stools.insert(StoolEntity(userId = userId, date = date, quality = validateStoolQuality(quality),
+            actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
+            timePrecision = details.recordedTime.precision, comment = details.comment))
+        dayStatus.invalidateSymptoms(userId, date, StorageFormats.nowTimestamp())
+    }
+    suspend fun updateStool(userId: Long, id: Long, quality: Int, context: EventContext? = null) = database.withTransaction {
         val entry = requireNotNull(stools.getById(id))
         require(entry.userId == userId)
-        stools.update(entry.copy(quality = validateStoolQuality(quality), updatedAt = StorageFormats.nowTimestamp()))
+        val details = (context ?: EventContext(RecordedTime(entry.actualTime, entry.utcOffset, entry.timeZone), entry.comment)).validated(entry.date)
+        stools.update(entry.copy(quality = validateStoolQuality(quality), updatedAt = StorageFormats.nowTimestamp(),
+            actualTime = details.recordedTime.time, utcOffset = details.recordedTime.utcOffset, timeZone = details.recordedTime.timeZone,
+            timePrecision = details.recordedTime.precision, comment = details.comment))
+        dayStatus.invalidateSymptoms(userId, entry.date, StorageFormats.nowTimestamp())
     }
-    suspend fun deleteStool(userId: Long, id: Long) = stools.deleteById(userId, id)
-    suspend fun addFeeling(userId: Long, date: String, text: String) {
+    suspend fun deleteStool(userId: Long, id: Long) = database.withTransaction {
+        val old = stools.getById(id)
+        stools.deleteById(userId, id)
+        if (old?.userId == userId) dayStatus.invalidateSymptoms(userId, old.date, StorageFormats.nowTimestamp())
+    }
+    suspend fun confirmDay(userId: Long, date: String, foodComplete: Boolean, symptomsComplete: Boolean, stoolSummary: String?) = database.withTransaction {
+        validateDay(date)
+        require(stoolSummary in setOf(null, "no_diarrhea", "diarrhea", "no_stool"))
+        require(if (symptomsComplete) stoolSummary != null else stoolSummary == null)
+        val entries = stools.getForDay(userId, date)
+        if (symptomsComplete) {
+            require(stoolSummary != "no_stool" || entries.isEmpty())
+            require(stoolSummary != "no_diarrhea" || entries.none { it.quality in 6..7 })
+            require(stoolSummary != "diarrhea" || entries.any { it.quality in 6..7 })
+        }
+        val old = dayStatus.get(userId, date)
+        val value = (old ?: DayStatusEntity(userId = userId, date = date)).copy(foodComplete = foodComplete,
+            symptomsComplete = symptomsComplete, stoolSummary = stoolSummary, updatedAt = StorageFormats.nowTimestamp())
+        if (old == null) dayStatus.insert(value) else dayStatus.update(value)
+    }
+    suspend fun addFeeling(userId: Long, date: String, text: String) = database.withTransaction {
+        validateDay(date)
         feelings.insert(FeelingEntity(userId = userId, date = date, description = validateText(text)))
+        dayStatus.invalidateSymptoms(userId, date, StorageFormats.nowTimestamp())
     }
-    suspend fun updateFeeling(userId: Long, id: Long, text: String) {
+    suspend fun updateFeeling(userId: Long, id: Long, text: String) = database.withTransaction {
         val entry = requireNotNull(feelings.getById(id))
         require(entry.userId == userId)
         feelings.update(entry.copy(description = validateText(text), updatedAt = StorageFormats.nowTimestamp()))
+        dayStatus.invalidateSymptoms(userId, entry.date, StorageFormats.nowTimestamp())
     }
-    suspend fun deleteFeeling(userId: Long, id: Long) = feelings.deleteById(userId, id)
+    suspend fun deleteFeeling(userId: Long, id: Long) = database.withTransaction {
+        val old = feelings.getById(id)
+        feelings.deleteById(userId, id)
+        if (old?.userId == userId) dayStatus.invalidateSymptoms(userId, old.date, StorageFormats.nowTimestamp())
+    }
     suspend fun setWaterForDay(userId: Long, date: String, count: Int) = database.withTransaction {
         require(count >= 0)
         val old = water.getForDay(userId, date)
@@ -231,13 +269,19 @@ class NutritionRepository(private val database: NutritionDatabase) {
         val count = water.getForDay(userId, date)?.glassesCount ?: 0
         setWaterForDay(userId, date, (count + delta).coerceAtLeast(0))
     }
-    suspend fun upsertSleep(userId: Long, date: String, wakeupTime: String, bedTime: String, qualityDescription: String?) {
+    suspend fun upsertSleep(userId: Long, date: String, wakeupTime: String, bedTime: String, qualityDescription: String?, period: SleepPeriod? = null) = database.withTransaction {
+        validateDay(date)
+        val wakeup = validateTime(wakeupTime); val bed = validateTime(bedTime)
         val old = sleeps.getForDay(userId, date)
-        sleeps.upsert(SleepEntity(id = old?.id ?: 0, userId = userId, date = date,
-            wakeupTime = validateTime(wakeupTime), bedTime = validateTime(bedTime),
-            qualityDescription = qualityDescription?.trim()?.ifBlank { null },
-            createdAt = old?.createdAt ?: StorageFormats.nowTimestamp(),
-            publicId = old?.publicId ?: java.util.UUID.randomUUID().toString()))
+        // Legacy nights retain unknown dates; new records refer to the night ending on the selected day.
+        val actualPeriod = period ?: if (old == null) SleepPeriod(
+            if (bed >= wakeup) validateDay(date).minusDays(1).toString() else date, date)
+            else old.bedDate?.let { SleepPeriod(it, requireNotNull(old.wakeupDate)) }
+        actualPeriod?.validate(bed, wakeup)
+        require(actualPeriod == null || actualPeriod.wakeupDate == date)
+        sleeps.upsert((old ?: SleepEntity(userId = userId, date = date, wakeupTime = wakeup, bedTime = bed)).copy(
+            wakeupTime = wakeup, bedTime = bed, qualityDescription = cleanComment(qualityDescription),
+            bedDate = actualPeriod?.bedDate, wakeupDate = actualPeriod?.wakeupDate, updatedAt = StorageFormats.nowTimestamp()))
     }
     suspend fun deleteSleep(userId: Long, date: String) = sleeps.deleteForDay(userId, date)
     suspend fun markNotificationSent(userId: Long, type: String, date: String): Boolean =

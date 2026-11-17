@@ -37,7 +37,7 @@ fun catalogMatches(entry: CatalogItem, query: String): Boolean = catalogMatches(
 fun foodItemTypeTitle(kind: String, foodType: String): String =
     if (kind == CatalogKind.PRODUCT) "Продукт" else FoodType.titleFor(foodType)
 
-data class MedicineSelection(val catalogId: Long, val dosage: String = "")
+data class MedicineSelection(val catalogId: Long, val dosage: String = "", val portion: Portion? = null, val comment: String? = null, val updateComment: Boolean = false)
 
 data class DailyStatsSnapshot(
     val date: String,
@@ -49,4 +49,5 @@ data class DailyStatsSnapshot(
     val waterCount: Int,
     val sleep: SleepEntity?,
     val analysis: StoolAnalysis,
+    val dayStatus: DayStatusEntity? = null,
 )

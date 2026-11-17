@@ -58,6 +58,11 @@ data class MealEntity(
     val updatedAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "public_id", defaultValue = "''")
     val publicId: String = java.util.UUID.randomUUID().toString(),
+    @ColumnInfo(name = "actual_time", defaultValue = "NULL") val actualTime: String? = null,
+    @ColumnInfo(name = "utc_offset", defaultValue = "NULL") val utcOffset: String? = null,
+    @ColumnInfo(name = "time_zone", defaultValue = "NULL") val timeZone: String? = null,
+    @ColumnInfo(name = "time_precision", defaultValue = "'date_only'") val timePrecision: String = "date_only",
+    @ColumnInfo(defaultValue = "NULL") val comment: String? = null,
 )
 
 @Entity(
@@ -78,6 +83,11 @@ data class MedicineEntity(
     val updatedAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "public_id", defaultValue = "''")
     val publicId: String = java.util.UUID.randomUUID().toString(),
+    @ColumnInfo(name = "actual_time", defaultValue = "NULL") val actualTime: String? = null,
+    @ColumnInfo(name = "utc_offset", defaultValue = "NULL") val utcOffset: String? = null,
+    @ColumnInfo(name = "time_zone", defaultValue = "NULL") val timeZone: String? = null,
+    @ColumnInfo(name = "time_precision", defaultValue = "'date_only'") val timePrecision: String = "date_only",
+    @ColumnInfo(defaultValue = "NULL") val comment: String? = null,
 )
 
 @Entity(
@@ -97,6 +107,11 @@ data class StoolEntity(
     val updatedAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "public_id", defaultValue = "''")
     val publicId: String = java.util.UUID.randomUUID().toString(),
+    @ColumnInfo(name = "actual_time", defaultValue = "NULL") val actualTime: String? = null,
+    @ColumnInfo(name = "utc_offset", defaultValue = "NULL") val utcOffset: String? = null,
+    @ColumnInfo(name = "time_zone", defaultValue = "NULL") val timeZone: String? = null,
+    @ColumnInfo(name = "time_precision", defaultValue = "'date_only'") val timePrecision: String = "date_only",
+    @ColumnInfo(defaultValue = "NULL") val comment: String? = null,
 )
 
 @Entity(
@@ -160,6 +175,21 @@ data class SleepEntity(
     val updatedAt: String = StorageFormats.nowTimestamp(),
     @ColumnInfo(name = "public_id", defaultValue = "''")
     val publicId: String = java.util.UUID.randomUUID().toString(),
+    @ColumnInfo(name = "bed_date", defaultValue = "NULL") val bedDate: String? = null,
+    @ColumnInfo(name = "wakeup_date", defaultValue = "NULL") val wakeupDate: String? = null,
+)
+
+@Entity(tableName = "day_status", indices = [Index(value = ["user_id", "date"], unique = true), Index(value = ["public_id"], unique = true)])
+data class DayStatusEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "user_id") val userId: Long,
+    val date: String,
+    @ColumnInfo(name = "food_complete", defaultValue = "0") val foodComplete: Boolean = false,
+    @ColumnInfo(name = "symptoms_complete", defaultValue = "0") val symptomsComplete: Boolean = false,
+    @ColumnInfo(name = "stool_summary", defaultValue = "NULL") val stoolSummary: String? = null,
+    @ColumnInfo(name = "created_at") val createdAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "updated_at") val updatedAt: String = StorageFormats.nowTimestamp(),
+    @ColumnInfo(name = "public_id") val publicId: String = java.util.UUID.randomUUID().toString(),
 )
 
 @Entity(

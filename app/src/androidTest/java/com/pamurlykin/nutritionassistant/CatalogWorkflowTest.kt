@@ -14,7 +14,7 @@ class CatalogWorkflowTest {
 
     @Test fun createMissingDishSelectSecondBySubstringAndKeepMealAfterRecreation() {
         val name = "Автотест суп " + System.currentTimeMillis()
-        compose.waitUntil(15_000) { compose.onAllNodesWithTag("daily-list").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("daily-list").fetchSemanticsNodes().any { it.config[androidx.compose.ui.semantics.SemanticsProperties.CollectionInfo].rowCount > 2 } }
         compose.onNodeWithTag("daily-list").performScrollToNode(hasTestTag("meal-snack"))
         compose.onNode(hasText("Добавить") and hasAnyAncestor(hasTestTag("meal-snack"))).performClick()
         compose.onNodeWithText("Поиск по части названия").performTextInput(name)
@@ -34,6 +34,7 @@ class CatalogWorkflowTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText(name + " · Домашняя").fetchSemanticsNodes().isNotEmpty() }
         compose.onAllNodesWithText("Гречка с курицей · Домашняя").onFirst().assertExists()
         compose.activityRule.scenario.recreate()
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("daily-list").fetchSemanticsNodes().any { it.config[androidx.compose.ui.semantics.SemanticsProperties.CollectionInfo].rowCount > 2 } }
         compose.onNodeWithTag("daily-list").performScrollToNode(hasText(name + " · Домашняя"))
         compose.onNodeWithText(name + " · Домашняя").assertExists()
         compose.onAllNodesWithText("Гречка с курицей · Домашняя").onFirst().assertExists()
@@ -53,6 +54,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Сохранить").performClick()
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Записей нет. Добавьте первую запись.").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToNode(hasText(productName))
         compose.onNodeWithText(productName).assertExists()
         compose.onNodeWithText("Молоко").assertDoesNotExist()
@@ -71,6 +73,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Сохранить").performClick()
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Записей нет. Добавьте первую запись.").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToNode(hasText(dishName))
         compose.onNodeWithText("$productName, Вода").assertExists()
         compose.onNodeWithText("Изменить").performScrollTo().performClick()
@@ -106,6 +109,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Продукты").performClick()
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Записей нет. Добавьте первую запись.").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToNode(hasText(productName))
         compose.onNodeWithText(productName).assertExists()
     }
