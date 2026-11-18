@@ -45,11 +45,18 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                 if (snapshot != null) {
                     Text("Приемов пищи: ${snapshot.meals.size} · Лекарств: ${snapshot.medicines.size} · Туалет: ${snapshot.stools.size}",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val loose = snapshot.stools.count { it.quality in 6..7 }
+                    Text("Жидкий стул, тип 6–7: $loose", modifier = Modifier.testTag("day-loose-count"),
+                        color = if (loose > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                    Text("Питание: " + (if (snapshot.dayStatus?.foodComplete == true) "подтверждено" else "не подтверждено") +
+                        "; симптомы: " + (if (snapshot.dayStatus?.symptomsComplete == true) "подтверждены" else "не подтверждены"), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
         if (snapshot == null) item { CircularProgressIndicator() }
         else {
+            item(key = "month-overview") { CalendarMonthOverview(calendar, !busy, viewModel::setDate) }
+            item(key = "timeline") { DayTimelineCard(snapshot) }
             items(MealType.entries) { type ->
                 val events = snapshot.meals.filter { it.event.mealType == type.storageValue }
                 NutritionCard(modifier = Modifier.testTag("meal-" + type.storageValue)) {

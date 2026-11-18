@@ -15,16 +15,23 @@ class IngredientConverters {
 @Dao
 interface CatalogDao {
     @Query("""
-        SELECT date, SUM(meals) AS meals, SUM(medicines) AS medicines, SUM(stools) AS stools
+        SELECT date, SUM(meals) AS meals, SUM(medicines) AS medicines, SUM(stools) AS stools,
+            SUM(looseStools) AS looseStools, SUM(softStools) AS softStools,
+            MAX(foodComplete) AS foodComplete, MAX(symptomsComplete) AS symptomsComplete, MAX(stoolSummary) AS stoolSummary
         FROM (
-            SELECT date, COUNT(*) AS meals, 0 AS medicines, 0 AS stools FROM meals
+            SELECT date, COUNT(*) AS meals, 0 AS medicines, 0 AS stools, 0 AS looseStools, 0 AS softStools,
+                0 AS foodComplete, 0 AS symptomsComplete, NULL AS stoolSummary FROM meals
             WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
             UNION ALL
-            SELECT date, 0 AS meals, COUNT(*) AS medicines, 0 AS stools FROM medicines
+            SELECT date, 0, COUNT(*), 0, 0, 0, 0, 0, NULL FROM medicines
             WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
             UNION ALL
-            SELECT date, 0 AS meals, 0 AS medicines, COUNT(*) AS stools FROM stools
+            SELECT date, 0, 0, COUNT(*), SUM(CASE WHEN quality IN (6,7) THEN 1 ELSE 0 END),
+                SUM(CASE WHEN quality = 5 THEN 1 ELSE 0 END), 0, 0, NULL FROM stools
             WHERE user_id = :userId AND date BETWEEN :start AND :end GROUP BY date
+            UNION ALL
+            SELECT date, 0, 0, 0, 0, 0, food_complete, symptoms_complete, stool_summary FROM day_status
+            WHERE user_id = :userId AND date BETWEEN :start AND :end
         ) GROUP BY date ORDER BY date
     """)
     fun observeCalendarCounts(userId: Long, start: String, end: String): Flow<List<CalendarDayCounts>>

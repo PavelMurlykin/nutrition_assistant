@@ -130,12 +130,12 @@ class RepositoryTest {
         repository.addStool(1, day, 6)
         repository.addStool(1, "2026-11-16", 3)
         val counts = repository.observeCalendarCounts(day, day).first().single()
-        assertEquals(CalendarDayCounts(day, 2, 1, 2), counts)
+        assertEquals(CalendarDayCounts(day, 2, 1, 2, looseStools = 1), counts)
         assertEquals(3, repository.observeCalendarCounts("2026-10-31", "2026-11-16").first().size)
 
         val snapshot = repository.observeDailyStats(1, day).first()
         snapshot.meals.forEach { repository.deleteMeal(1, it.event.id) }
-        assertEquals(CalendarDayCounts(day, 0, 1, 2), repository.observeCalendarCounts(day, day).first().single())
+        assertEquals(CalendarDayCounts(day, 0, 1, 2, looseStools = 1), repository.observeCalendarCounts(day, day).first().single())
         snapshot.medicines.forEach { repository.deleteMedicine(1, it.event.id) }
         snapshot.stools.forEach { repository.deleteStool(1, it.id) }
         assertTrue(repository.observeCalendarCounts(day, day).first().isEmpty())

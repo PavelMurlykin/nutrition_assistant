@@ -30,7 +30,7 @@ The app opens «Календарь» (Calendar) with today's diary. The bottom t
 
 ## Consistent interface and forms
 
-In version 0.9.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+In version 0.10.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
 
 The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
 
@@ -47,6 +47,22 @@ Food, medication, and toilet icons mark days with saved events. The diary headin
 Scrolling the diary up collapses the calendar; returning to the top expands it. Vertical gestures over the calendar also scroll the diary. On short screens or with large system fonts, the calendar scrolls with the diary. «+» opens a choice of breakfast, lunch, dinner, snack, medication intake, or toilet entry. Choosing a type always creates a new event; use «Изменить» (Edit) on the required record to change it. Other sections remain available further down the diary. Each section supports adding, editing, and deleting records. Merely viewing a date does not create records.
 
 Multiple breakfasts, lunches, dinners, snacks, and medication intakes can be recorded per day. A meal can contain one dish, one product, or a mixture. Multiple stool and wellbeing entries are also supported. Sleep and water count each have one record per day.
+
+### Symptom marks and monthly overview
+
+Since version 0.10.0, a red “!” means “Loose stool, type 6–7”: one recorded episode is sufficient. This is a diary mark, not a diagnosis. A mixed day with types 4 and 7 stays marked; type 5 alone never turns the mark on. The selected day's heading separately counts type-6–7 episodes. Cell accessibility descriptions include this count, type 5, and food/symptom completeness.
+
+“✓” means an explicitly confirmed outcome without loose stool: No stool and No loose stool have different cell descriptions and day-list labels. “?” means an unconfirmed symptom outcome; empty and future days retain it. Food confirmation is independent. Today has a thicker outline and the selected day has a background; the red mark remains visible with both. Editing or deleting the last type-6–7 record immediately removes “!” without automatically confirming absence of symptoms.
+
+Below the selected-day heading, the monthly overview counts days with types 6–7, their episodes, type-5 episodes, confirmed days without loose stool, and separate food/symptom confirmations. It covers the entire displayed month, including future dates that are still unconfirmed; adjacent grid dates are excluded. A loading label appears until data arrives.
+
+«Дни месяца и фильтр» (Month days and filter) opens all dates in that month. Enable «Только дни с типом 6–7» (Only days with types 6–7) to keep dates with recorded episodes. Tapping a row selects the day and opens its diary and timeline. Filtering applies to this list; the grid retains the month's context. An empty result means no recorded episodes, not established absence of symptoms. The filter survives screen recreation.
+
+### Selected-day timeline
+
+The timeline shows food, medication, stool, health observations, and sleep with recorded names, quantities, doses, and comments. Precise events sort by actual time including UTC offset while retaining the original local diary date. Medication at 13:00 therefore appears after a stool event at 12:30. Equal precise times establish no relative order; the app infers no cause.
+
+Entries without precise times appear under Time unspecified — order unknown. Daily ratings and sleep have a separate Whole day or night — no order relative to events group. Creation time never supplies an event time; sleep is not converted into a wake-up event. Water remains in its diary card. Each group initially shows up to six entries; larger groups offer a full timeline. Use the record cards below to edit or delete. With enlarged text, the calendar becomes taller and scrolls with the diary.
 
 ### Food
 

@@ -43,7 +43,9 @@ fun MonthCalendar(
     val next by rememberUpdatedState(onNextMonth)
     val threshold = with(LocalDensity.current) { 48.dp.toPx() }
     val compact = collapseFraction > 0.5f
-    Card(modifier.fillMaxWidth().height(height).testTag("month-calendar").pointerInput(threshold, enabled) {
+    val fontScale = LocalDensity.current.fontScale
+    val calendarHeight = if (fontScale > 1.3f) height.coerceAtLeast((200 + 400 * fontScale).dp) else if (!compact) height.coerceAtLeast(400.dp) else height
+    Card(modifier.fillMaxWidth().height(calendarHeight).testTag("month-calendar").pointerInput(threshold, enabled) {
         var distance = 0f
         detectHorizontalDragGestures(onDragStart = { distance = 0f }, onHorizontalDrag = { change, delta ->
             change.consume(); distance += delta
@@ -70,6 +72,10 @@ fun MonthCalendar(
                 CalendarLegend(Icons.Rounded.Medication, "Лекарства")
                 CalendarLegend(Icons.Rounded.Wc, "Туалет")
             }
+            if (!compact) {
+                Text("! Жидкий стул, тип 6–7", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
+                Text("✓ Итог без жидкого стула подтверждён · ? Не подтверждён", style = MaterialTheme.typography.labelSmall)
+            }
             Row(Modifier.fillMaxWidth()) {
                 listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { name ->
                     Text(name, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
@@ -80,7 +86,7 @@ fun MonthCalendar(
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     week.forEach { day -> key(day.date) {
                         CalendarDayCell(day, day.date == state.selectedDate, { onDaySelected(day.date) },
-                            Modifier.weight(1f).fillMaxHeight(), compact, enabled)
+                            Modifier.weight(1f).fillMaxHeight(), compact, enabled, state.isLoaded)
                     } }
                 }
             }
@@ -104,6 +110,7 @@ private fun CalendarDayCell(
     modifier: Modifier,
     compact: Boolean,
     enabled: Boolean,
+    loaded: Boolean,
 ) {
     val description = buildList {
         add(StorageFormats.formatDateForDisplay(day.date))
@@ -111,20 +118,38 @@ private fun CalendarDayCell(
         add("Приемов пищи: ${day.meals}")
         add("Приемов лекарств: ${day.medicines}")
         add("Туалет: ${day.stools}")
+        if (loaded) {
+            add("Жидкий стул, тип 6–7: ${day.looseStools}")
+            add("Мягкий стул, тип 5: ${day.softStools}")
+            add(day.stoolState.title)
+            add("Питание: " + if (day.foodComplete) "подтверждено" else "не подтверждено")
+            add("Симптомы: " + if (day.symptomsComplete) "подтверждены" else "не подтверждены")
+        } else add("Данные календаря загружаются")
     }.joinToString(", ")
     val primary = MaterialTheme.colorScheme.primary
     val border = if (isSelected || day.isToday) primary else primary.copy(alpha = 0.08f)
     Box(modifier.testTag("calendar-day-${day.date}").clip(RoundedCornerShape(10.dp))
         .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
-        .border(1.dp, border, RoundedCornerShape(10.dp))
+        .border(if (day.isToday) 2.dp else 1.dp, border, RoundedCornerShape(10.dp))
         .semantics(mergeDescendants = true) { selected = isSelected; contentDescription = description }
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick).padding(2.dp)) {
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = if (compact) Arrangement.Center else Arrangement.SpaceBetween) {
-            Text(day.date.dayOfMonth.toString(),
-                style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.titleSmall,
-                color = if (day.inCurrentMonth) primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
+            val largeText = LocalDensity.current.fontScale > 1.3f
+            val number: @Composable () -> Unit = {
+                Text(day.date.dayOfMonth.toString(),
+                    style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.titleSmall,
+                    color = if (day.inCurrentMonth) primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium)
+            }
+            val status: @Composable () -> Unit = {
+                Text(if (loaded) day.stoolState.symbol else "…", style = MaterialTheme.typography.labelSmall,
+                    modifier = if (day.looseStools > 0) Modifier.background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(4.dp)).padding(horizontal = 3.dp) else Modifier,
+                    color = if (day.looseStools > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold)
+            }
+            if (largeText) { number(); status() }
+            else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) { number(); status() }
             Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
                 val size = if (compact) 10.dp else 12.dp
                 if (day.meals > 0) Icon(Icons.Rounded.Restaurant, null, Modifier.size(size), tint = primary)

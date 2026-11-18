@@ -48,14 +48,14 @@ class DailyStatsViewModel(
         val month = YearMonth.parse(value)
         val start = calendarStart(month)
         repository.observeCalendarCounts(start.toString(), start.plusDays(41).toString())
-            .map { month to it }
-            .onStart { emit(month to emptyList()) }
+            .map { month to (it as List<CalendarDayCounts>?) }
+            .onStart { emit(month to null) }
             .catch { error.value = it.message ?: "Не удалось открыть календарь." }
     }
     val calendar = combine(monthCounts, selectedDate, today) { (month, counts), date, currentDay ->
-        buildCalendarMonth(month, LocalDate.parse(date), currentDay, counts)
+        buildCalendarMonth(month, LocalDate.parse(date), currentDay, counts.orEmpty(), isLoaded = counts != null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
-        buildCalendarMonth(YearMonth.parse(visibleMonth.value), LocalDate.parse(selectedDate.value), today.value))
+        buildCalendarMonth(YearMonth.parse(visibleMonth.value), LocalDate.parse(selectedDate.value), today.value, isLoaded = false))
 
     fun setDate(date: LocalDate) {
         if (date.year !in 1..9999) return
