@@ -1,0 +1,436 @@
+{
+  "device": {
+    "abi": "x86_64",
+    "airplane_mode": true,
+    "sdk": 37,
+    "wifi_disabled": true
+  },
+  "holdout_notes": 40,
+  "model": {
+    "compared_units": 188,
+    "conflict_errors": [
+      "C37"
+    ],
+    "confusion_expected_rows": {
+      "NEGATED": {
+        "NEGATED": 10,
+        "NO_DATA": 1,
+        "PRESENT": 0,
+        "UNCERTAIN": 1
+      },
+      "NO_DATA": {
+        "NEGATED": 2,
+        "NO_DATA": 145,
+        "PRESENT": 2,
+        "UNCERTAIN": 3
+      },
+      "PRESENT": {
+        "NEGATED": 3,
+        "NO_DATA": 4,
+        "PRESENT": 5,
+        "UNCERTAIN": 3
+      },
+      "UNCERTAIN": {
+        "NEGATED": 1,
+        "NO_DATA": 0,
+        "PRESENT": 0,
+        "UNCERTAIN": 8
+      }
+    },
+    "critical_false_affirmations": [
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C30",
+        "quote": "Спортивная сумка так и осталась дома",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C31",
+        "quote": "Температура воды в душе была комфортной",
+        "topic": "ILLNESS"
+      }
+    ],
+    "differences": [
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C03",
+        "quote": "Начал париться из-за отчёта, весь день был как на иголках",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C04",
+        "quote": "Подъём по лестнице оказался серьёзной нагрузкой",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C05",
+        "quote": "Отбегала круг в парке перед завтраком",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "PRESENT",
+        "note_id": "C07",
+        "quote": "Ночью знобило, утром измерила температуру: 38",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C08",
+        "quote": "Похолодание совпало с тем, что я простудился",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "PRESENT",
+        "note_id": "C10",
+        "quote": "В 14:15 запила капсулу водой",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "PRESENT",
+        "note_id": "C11",
+        "quote": "Пробежка вышла спокойной, стресс не почувствовал",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "NO_DATA",
+        "expected": "NEGATED",
+        "note_id": "C17",
+        "quote": "От капсулы отказался",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "NEGATED",
+        "note_id": "C18",
+        "quote": "Выпить таблетку не удалось, забыла дома",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C26",
+        "quote": "Не подтверждаю приём препарата, информация со слов другого человека",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "NO_DATA",
+        "note_id": "C27",
+        "quote": "У нас в офисе коллега нервничал из-за проекта",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "NO_DATA",
+        "note_id": "C29",
+        "quote": "Тренировка брата прошла отлично",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C30",
+        "quote": "Спортивная сумка так и осталась дома",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C31",
+        "quote": "Температура воды в душе была комфортной",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "NO_DATA",
+        "note_id": "C32",
+        "quote": "У дочери сегодня обнаружили простуду",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "NO_DATA",
+        "note_id": "C33",
+        "quote": "В аптеке спросили, нужен ли мне препарат",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "NO_DATA",
+        "note_id": "C34",
+        "quote": "В магазине увидела упаковку таблеток, покупать не стала",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "PRESENT",
+        "note_id": "C36",
+        "quote": "Тревога появилась в обед",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "UNCERTAIN",
+        "expected": "PRESENT",
+        "note_id": "C37",
+        "quote": "Таблетку всё же выпила",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "PRESENT",
+        "note_id": "C39",
+        "quote": "Утром 😕 нервничал",
+        "topic": "STRESS"
+      }
+    ],
+    "macro_f1": 0.6989406840400219
+  },
+  "model_version": "note-ngram-nb1-eb7d7b3636fb4b33",
+  "quality_gate_pass": false,
+  "resources_emulator_only": {
+    "deserialize_ms": 175.241891,
+    "encoded_model_bytes": 77247,
+    "pss_after_kib": 216577,
+    "pss_before_kib": 177853,
+    "requests": 195,
+    "warm_p50_ms": 0.284003,
+    "warm_p95_ms": 0.8687
+  },
+  "template": {
+    "compared_units": 188,
+    "conflict_errors": [],
+    "confusion_expected_rows": {
+      "NEGATED": {
+        "NEGATED": 10,
+        "NO_DATA": 0,
+        "PRESENT": 2,
+        "UNCERTAIN": 0
+      },
+      "NO_DATA": {
+        "NEGATED": 1,
+        "NO_DATA": 145,
+        "PRESENT": 6,
+        "UNCERTAIN": 0
+      },
+      "PRESENT": {
+        "NEGATED": 1,
+        "NO_DATA": 2,
+        "PRESENT": 12,
+        "UNCERTAIN": 0
+      },
+      "UNCERTAIN": {
+        "NEGATED": 5,
+        "NO_DATA": 0,
+        "PRESENT": 1,
+        "UNCERTAIN": 3
+      }
+    },
+    "critical_false_affirmations": [
+      {
+        "actual": "PRESENT",
+        "expected": "NEGATED",
+        "note_id": "C15",
+        "quote": "Болезнь исключаю: чувствовала себя как обычно",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NEGATED",
+        "note_id": "C17",
+        "quote": "От капсулы отказался",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "UNCERTAIN",
+        "note_id": "C25",
+        "quote": "Мог принять капсулу, в органайзере пусто",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C27",
+        "quote": "У нас в офисе коллега нервничал из-за проекта",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C28",
+        "quote": "В подкасте было слово «стресс»",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C29",
+        "quote": "Тренировка брата прошла отлично",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C30",
+        "quote": "Спортивная сумка так и осталась дома",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C31",
+        "quote": "Температура воды в душе была комфортной",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C33",
+        "quote": "В аптеке спросили, нужен ли мне препарат",
+        "topic": "MEDICINE"
+      }
+    ],
+    "differences": [
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C03",
+        "quote": "Начал париться из-за отчёта, весь день был как на иголках",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "NO_DATA",
+        "expected": "PRESENT",
+        "note_id": "C05",
+        "quote": "Отбегала круг в парке перед завтраком",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "PRESENT",
+        "note_id": "C11",
+        "quote": "Пробежка вышла спокойной, стресс не почувствовал",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NEGATED",
+        "note_id": "C15",
+        "quote": "Болезнь исключаю: чувствовала себя как обычно",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NEGATED",
+        "note_id": "C17",
+        "quote": "От капсулы отказался",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C19",
+        "quote": "Не берусь сказать, была ли тревога",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C20",
+        "quote": "Подозреваю стресс, но могло просто не хватить сна",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C22",
+        "quote": "Бег, наверное, был, часы не записали",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C23",
+        "quote": "Вряд ли это простуда, но пока не разобралась",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "UNCERTAIN",
+        "note_id": "C25",
+        "quote": "Мог принять капсулу, в органайзере пусто",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "UNCERTAIN",
+        "note_id": "C26",
+        "quote": "Не подтверждаю приём препарата, информация со слов другого человека",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C27",
+        "quote": "У нас в офисе коллега нервничал из-за проекта",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C28",
+        "quote": "В подкасте было слово «стресс»",
+        "topic": "STRESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C29",
+        "quote": "Тренировка брата прошла отлично",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C30",
+        "quote": "Спортивная сумка так и осталась дома",
+        "topic": "ACTIVITY"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C31",
+        "quote": "Температура воды в душе была комфортной",
+        "topic": "ILLNESS"
+      },
+      {
+        "actual": "PRESENT",
+        "expected": "NO_DATA",
+        "note_id": "C33",
+        "quote": "В аптеке спросили, нужен ли мне препарат",
+        "topic": "MEDICINE"
+      },
+      {
+        "actual": "NEGATED",
+        "expected": "NO_DATA",
+        "note_id": "C34",
+        "quote": "В магазине увидела упаковку таблеток, покупать не стала",
+        "topic": "MEDICINE"
+      }
+    ],
+    "macro_f1": 0.7065553761580747
+  },
+  "train_examples": 64
+}

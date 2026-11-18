@@ -44,11 +44,14 @@ class FoodWorkflowTest {
         compose.onNode(hasText("Чеснок") and isToggleable()).performScrollTo().assertIsDisplayed().performClick().assertIsOn()
         compose.onNodeWithText("Сведения о составе и комментарий").performScrollTo().performClick()
         compose.onNode(hasText("Частичный состав") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).performScrollTo().performClick()
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitForIdle()
         capture("product-variant-editor")
         compose.activityRule.scenario.recreate()
         compose.waitUntil(15_000) { compose.onAllNodesWithText("Название").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Название").assertTextContains(name)
-        compose.onNodeWithText("Сохранить").performClick()
+        compose.onNodeWithText("Сохранить").assertIsDisplayed().assertIsEnabled().performClick()
+        compose.waitUntil(15_000) { compose.onAllNodesWithText("Название").fetchSemanticsNodes().isEmpty() }
         compose.waitUntil(15_000) { runBlocking { repo.observeCatalog().first().any { it.name == name } } }
         val product = runBlocking { repo.observeCatalog().first().single { it.name == name } }
         assertTrue("Selected garlic survives recreation", product.ingredients.contains("Чеснок"))

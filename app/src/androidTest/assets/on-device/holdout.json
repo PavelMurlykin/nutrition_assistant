@@ -1,0 +1,496 @@
+[
+  {
+    "id": "C01",
+    "text": "Дедлайн меня вымотал, к вечеру сильно нервничала",
+    "gold": [
+      {
+        "quote": "Дедлайн меня вымотал, к вечеру сильно нервничала",
+        "topic": "STRESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C02",
+    "text": "После разговора накрыла тревога",
+    "gold": [
+      {
+        "quote": "После разговора накрыла тревога",
+        "topic": "STRESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C03",
+    "text": "Начал париться из-за отчёта, весь день был как на иголках",
+    "gold": [
+      {
+        "quote": "Начал париться из-за отчёта, весь день был как на иголках",
+        "topic": "STRESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C04",
+    "text": "Подъём по лестнице оказался серьёзной нагрузкой",
+    "gold": [
+      {
+        "quote": "Подъём по лестнице оказался серьёзной нагрузкой",
+        "topic": "ACTIVITY",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C05",
+    "text": "Отбегала круг в парке перед завтраком",
+    "gold": [
+      {
+        "quote": "Отбегала круг в парке перед завтраком",
+        "topic": "ACTIVITY",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C06",
+    "text": "Записала тренировку после обеда",
+    "gold": [
+      {
+        "quote": "Записала тренировку после обеда",
+        "topic": "ACTIVITY",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C07",
+    "text": "Ночью знобило, утром измерила температуру: 38",
+    "gold": [
+      {
+        "quote": "Ночью знобило, утром измерила температуру: 38",
+        "topic": "ILLNESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C08",
+    "text": "Похолодание совпало с тем, что я простудился",
+    "gold": [
+      {
+        "quote": "Похолодание совпало с тем, что я простудился",
+        "topic": "ILLNESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C09",
+    "text": "Жидкий стул был в 07:00. Таблетку принял только в 10:00",
+    "gold": [
+      {
+        "quote": "Таблетку принял только в 10:00",
+        "topic": "MEDICINE",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C10",
+    "text": "В 14:15 запила капсулу водой",
+    "gold": [
+      {
+        "quote": "В 14:15 запила капсулу водой",
+        "topic": "MEDICINE",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C11",
+    "text": "Пробежка вышла спокойной, стресс не почувствовал",
+    "gold": [
+      {
+        "quote": "Пробежка вышла спокойной, стресс не почувствовал",
+        "topic": "ACTIVITY",
+        "stance": "PRESENT"
+      },
+      {
+        "quote": "Пробежка вышла спокойной, стресс не почувствовал",
+        "topic": "STRESS",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C12",
+    "text": "Нервничать было совершенно не о чем, никакого стресса",
+    "gold": [
+      {
+        "quote": "Нервничать было совершенно не о чем, никакого стресса",
+        "topic": "STRESS",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C13",
+    "text": "Отменили занятие; сегодня я не тренировался",
+    "gold": [
+      {
+        "quote": "сегодня я не тренировался",
+        "topic": "ACTIVITY",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C14",
+    "text": "Бега не случилось из-за дождя",
+    "gold": [
+      {
+        "quote": "Бега не случилось из-за дождя",
+        "topic": "ACTIVITY",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C15",
+    "text": "Болезнь исключаю: чувствовала себя как обычно",
+    "gold": [
+      {
+        "quote": "Болезнь исключаю: чувствовала себя как обычно",
+        "topic": "ILLNESS",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C16",
+    "text": "Температуры за весь вечер так и не было",
+    "gold": [
+      {
+        "quote": "Температуры за весь вечер так и не было",
+        "topic": "ILLNESS",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C17",
+    "text": "От капсулы отказался",
+    "gold": [
+      {
+        "quote": "От капсулы отказался",
+        "topic": "MEDICINE",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C18",
+    "text": "Выпить таблетку не удалось, забыла дома",
+    "gold": [
+      {
+        "quote": "Выпить таблетку не удалось, забыла дома",
+        "topic": "MEDICINE",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C19",
+    "text": "Не берусь сказать, была ли тревога",
+    "gold": [
+      {
+        "quote": "Не берусь сказать, была ли тревога",
+        "topic": "STRESS",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C20",
+    "text": "Подозреваю стресс, но могло просто не хватить сна",
+    "gold": [
+      {
+        "quote": "Подозреваю стресс, но могло просто не хватить сна",
+        "topic": "STRESS",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C21",
+    "text": "Не ручаюсь, что тренировка была сегодня, возможно, она вчерашняя",
+    "gold": [
+      {
+        "quote": "Не ручаюсь, что тренировка была сегодня, возможно, она вчерашняя",
+        "topic": "ACTIVITY",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C22",
+    "text": "Бег, наверное, был, часы не записали",
+    "gold": [
+      {
+        "quote": "Бег, наверное, был, часы не записали",
+        "topic": "ACTIVITY",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C23",
+    "text": "Вряд ли это простуда, но пока не разобралась",
+    "gold": [
+      {
+        "quote": "Вряд ли это простуда, но пока не разобралась",
+        "topic": "ILLNESS",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C24",
+    "text": "Температуру не мерила, не знаю, была ли повышена",
+    "gold": [
+      {
+        "quote": "Температуру не мерила, не знаю, была ли повышена",
+        "topic": "ILLNESS",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C25",
+    "text": "Мог принять капсулу, в органайзере пусто",
+    "gold": [
+      {
+        "quote": "Мог принять капсулу, в органайзере пусто",
+        "topic": "MEDICINE",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C26",
+    "text": "Не подтверждаю приём препарата, информация со слов другого человека",
+    "gold": [
+      {
+        "quote": "Не подтверждаю приём препарата, информация со слов другого человека",
+        "topic": "MEDICINE",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C27",
+    "text": "У нас в офисе коллега нервничал из-за проекта",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C28",
+    "text": "В подкасте было слово «стресс»",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C29",
+    "text": "Тренировка брата прошла отлично",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C30",
+    "text": "Спортивная сумка так и осталась дома",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C31",
+    "text": "Температура воды в душе была комфортной",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C32",
+    "text": "У дочери сегодня обнаружили простуду",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C33",
+    "text": "В аптеке спросили, нужен ли мне препарат",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C34",
+    "text": "В магазине увидела упаковку таблеток, покупать не стала",
+    "gold": [],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C35",
+    "text": "Съел готовый фарш. Состав на упаковке прочитать не смог",
+    "gold": [],
+    "critical": false,
+    "conflicts": []
+  },
+  {
+    "id": "C36",
+    "text": "Тревога появилась в обед. Таблеток не принимала. С нагрузкой пока неясно",
+    "gold": [
+      {
+        "quote": "Тревога появилась в обед",
+        "topic": "STRESS",
+        "stance": "PRESENT"
+      },
+      {
+        "quote": "Таблеток не принимала",
+        "topic": "MEDICINE",
+        "stance": "NEGATED"
+      },
+      {
+        "quote": "С нагрузкой пока неясно",
+        "topic": "ACTIVITY",
+        "stance": "UNCERTAIN"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C37",
+    "text": "Таблетки не принимала. Таблетку всё же выпила",
+    "gold": [
+      {
+        "quote": "Таблетки не принимала",
+        "topic": "MEDICINE",
+        "stance": "NEGATED"
+      },
+      {
+        "quote": "Таблетку всё же выпила",
+        "topic": "MEDICINE",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": true,
+    "conflicts": [
+      "MEDICINE"
+    ]
+  },
+  {
+    "id": "C38",
+    "text": "Температуры не было. Температура всё-таки поднялась",
+    "gold": [
+      {
+        "quote": "Температуры не было",
+        "topic": "ILLNESS",
+        "stance": "NEGATED"
+      },
+      {
+        "quote": "Температура всё-таки поднялась",
+        "topic": "ILLNESS",
+        "stance": "PRESENT"
+      }
+    ],
+    "critical": true,
+    "conflicts": [
+      "ILLNESS"
+    ]
+  },
+  {
+    "id": "C39",
+    "text": "Утром 😕 нервничал; вечером не тренировался",
+    "gold": [
+      {
+        "quote": "Утром 😕 нервничал",
+        "topic": "STRESS",
+        "stance": "PRESENT"
+      },
+      {
+        "quote": "вечером не тренировался",
+        "topic": "ACTIVITY",
+        "stance": "NEGATED"
+      }
+    ],
+    "critical": true,
+    "conflicts": []
+  },
+  {
+    "id": "C40",
+    "text": " \n ",
+    "gold": [],
+    "critical": false,
+    "conflicts": []
+  }
+]
