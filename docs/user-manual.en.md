@@ -30,7 +30,7 @@ The app opens «Календарь» (Calendar) with today's diary. The bottom t
 
 ## Consistent interface and forms
 
-In version 0.12.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+In version 0.13.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
 
 The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
 
@@ -147,6 +147,12 @@ Product search filters components as you type without losing selections. Create 
 
 Built-in products have stable keys. Updates add missing entries while preserving user edits, favorites, and archive state. On the first update, a single legacy basic entry with the same normalized name is linked to its key; a missing category is filled only for revision 1. Multiple legacy matches produce a Menu prompt: select an existing entry or create the built-in entry separately. Ambiguous identities are never automatically merged.
 
+### Product links
+
+Go to «Меню» (Menu) → «Продукты» (Products), then open «Ссылки на товар» (Product links) on the product card. Tap «Добавить ссылку» (Add link) and paste the complete HTTPS page address with a domain name. You can save multiple addresses per product. Enter an optional source name of up to 120 characters and the date you checked the page, if known. A blank source name uses the domain. You can edit or delete a link. After changing the address, enter the check date again.
+
+Tap «Открыть» (Open), review the domain and address, then tap «Открыть в браузере» (Open in browser). The browser receives the saved URL, including any parameters you pasted after the question mark. Use ordinary product addresses without personal data or access codes. The website can change the page or redirect the request. Check the current ingredients against the package label. Links stay on the product card and are included in backups. They are excluded from the export for an external model.
+
 ### Portions, history, and repeating meals
 
 Intake forms provide category, favorite, recent, and composition-search filters too. Composition on a search result shows current details; Composition of item on selected or logged food shows its own snapshot. One dish, one product such as dumplings, or “cutlet + mash + cucumber” can form a single event.
@@ -159,7 +165,7 @@ Ordinary catalog or event-comment edits preserve logged food composition. Update
 
 Actual-time, scale, and completeness forms are available as described above.
 
-Export creates JSON 5; import reads JSON 1–5. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
+Export creates JSON 6 and import reads JSON 1–6. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
 
 ## Reminders and permission
 
@@ -195,7 +201,7 @@ No additional storage permission is needed. A copy outside the local database ca
 
 ### Import
 
-1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, 3, 4, or 5 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
+1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, 3, 4, 5, or 6 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
 2. Review «Проверка импорта» (Import preview): object counts, additions, matches, and conflicts. History merges into the current personal diary; the database is not cleared.
 3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local metadata, composition, favorites, and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. Transfer matching also includes basic product/variant, brand, and variant label. If this combination is ambiguous in either catalog, entries remain separate without name-based merging.
 4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water, sleep, and day-completeness records on the same date also remain; importing new observations invalidates the corresponding previous confirmation. Long lists show the first 100 details of each kind and the total count.
@@ -210,7 +216,7 @@ The preview and prepared backup survive screen recreation within the current pro
 
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 preserve events and reminder settings. Schema 8 adds tracked factors without changing history. Schema 7 moves old state text into comments without guessing scores, makes sleep times optional, and adds scales with versions. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 preserve events and reminder settings. Schema 9 adds product bookmarks. Schema 8 adds tracked factors without changing history. Schema 7 moves old state text into comments without guessing scores, makes sleep times optional, and adds scales with versions. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
 
 Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 

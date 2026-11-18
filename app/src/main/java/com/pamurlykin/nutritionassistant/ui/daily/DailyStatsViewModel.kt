@@ -100,6 +100,11 @@ class DailyStatsViewModel(
         var result: CatalogItem? = null
         perform({ onSuccess(requireNotNull(result)) }) { result = repository.saveCatalogEntry(id, kind, name, type, productIds) }
     }
+    fun observeProductLinks(catalogId: Long) = repository.productLinks.observe(catalogId)
+    fun saveProductLink(catalogId: Long, id: Long?, draft: ProductLinkDraft, onSuccess: () -> Unit) =
+        perform(onSuccess) { repository.productLinks.save(catalogId, id, draft) }
+    fun deleteProductLink(catalogId: Long, id: Long) = perform { repository.productLinks.delete(catalogId, id) }
+
     fun restoreCatalog(id: Long) = perform { repository.restoreCatalogEntry(id) }
     fun archiveCatalog(id: Long) = perform { repository.archiveCatalogEntry(id) }
     fun saveMeal(type: MealType, id: Long?, ids: List<Long>, onSuccess: () -> Unit,

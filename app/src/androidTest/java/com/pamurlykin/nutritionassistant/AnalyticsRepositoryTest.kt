@@ -37,7 +37,7 @@ class AnalyticsRepositoryTest {
     }
     @Test fun coherentHistoryFlowAndJsonFiveRestoreTrackingAndRepeatWithoutDuplicates()=runBlocking {
         val product=repo.observeCatalog().first().first {it.kind=="product"};repo.analytics.saveTarget(1,null,product.id,"entry","Собственная заметка","Комментарий")
-        val store=BackupStore(db,"test");val bytes=store.export();assertEquals(5,JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
+        val store=BackupStore(db,"test");val bytes=store.export();assertEquals(6,JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
         val target=database()
         try {
             val other=NutritionRepository(target);other.initialize();val targetStore=BackupStore(target,"test");val file=BackupCodec.decode(bytes)

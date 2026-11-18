@@ -1,0 +1,1813 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 9,
+    "identityHash": "0da45fe24202835068e5a7998dc91ff0",
+    "entities": [
+      {
+        "tableName": "users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`user_id` INTEGER NOT NULL, `breakfast_time` TEXT NOT NULL, `lunch_time` TEXT NOT NULL, `dinner_time` TEXT NOT NULL, `toilet_time` TEXT NOT NULL, `wakeup_time` TEXT NOT NULL, `bed_time` TEXT NOT NULL, `breakfast_enabled` INTEGER NOT NULL DEFAULT 1, `lunch_enabled` INTEGER NOT NULL DEFAULT 1, `dinner_enabled` INTEGER NOT NULL DEFAULT 1, `toilet_enabled` INTEGER NOT NULL DEFAULT 1, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`user_id`))",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "breakfastTime",
+            "columnName": "breakfast_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lunchTime",
+            "columnName": "lunch_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dinnerTime",
+            "columnName": "dinner_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toiletTime",
+            "columnName": "toilet_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakeupTime",
+            "columnName": "wakeup_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bedTime",
+            "columnName": "bed_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "breakfastEnabled",
+            "columnName": "breakfast_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "lunchEnabled",
+            "columnName": "lunch_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "dinnerEnabled",
+            "columnName": "dinner_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "toiletEnabled",
+            "columnName": "toilet_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "user_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_users_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_users_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "meals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `meal_type` TEXT NOT NULL, `description` TEXT NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', `actual_time` TEXT DEFAULT NULL, `utc_offset` TEXT DEFAULT NULL, `time_zone` TEXT DEFAULT NULL, `time_precision` TEXT NOT NULL DEFAULT 'date_only', `comment` TEXT DEFAULT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealType",
+            "columnName": "meal_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "actualTime",
+            "columnName": "actual_time",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "utcOffset",
+            "columnName": "utc_offset",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timeZone",
+            "columnName": "time_zone",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timePrecision",
+            "columnName": "time_precision",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'date_only'"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_meals_user_id_date",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_meals_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_meals_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_meals_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "medicines",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `name` TEXT NOT NULL, `dosage` TEXT, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', `actual_time` TEXT DEFAULT NULL, `utc_offset` TEXT DEFAULT NULL, `time_zone` TEXT DEFAULT NULL, `time_precision` TEXT NOT NULL DEFAULT 'date_only', `comment` TEXT DEFAULT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosage",
+            "columnName": "dosage",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "actualTime",
+            "columnName": "actual_time",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "utcOffset",
+            "columnName": "utc_offset",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timeZone",
+            "columnName": "time_zone",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timePrecision",
+            "columnName": "time_precision",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'date_only'"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medicines_user_id_date",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medicines_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_medicines_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medicines_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "stools",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `quality` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', `actual_time` TEXT DEFAULT NULL, `utc_offset` TEXT DEFAULT NULL, `time_zone` TEXT DEFAULT NULL, `time_precision` TEXT NOT NULL DEFAULT 'date_only', `comment` TEXT DEFAULT NULL, `scale_version` INTEGER DEFAULT NULL, `quality_label` TEXT DEFAULT NULL, `urgency` INTEGER DEFAULT NULL, `pain` INTEGER DEFAULT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quality",
+            "columnName": "quality",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "actualTime",
+            "columnName": "actual_time",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "utcOffset",
+            "columnName": "utc_offset",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timeZone",
+            "columnName": "time_zone",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "timePrecision",
+            "columnName": "time_precision",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'date_only'"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "scaleVersion",
+            "columnName": "scale_version",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "qualityLabel",
+            "columnName": "quality_label",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "urgency",
+            "columnName": "urgency",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "pain",
+            "columnName": "pain",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_stools_user_id_date",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_stools_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_stools_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_stools_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "health_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `metric` TEXT NOT NULL, `value_code` TEXT, `value_label` TEXT, `scale_version` INTEGER, `period` TEXT NOT NULL, `day_slot` INTEGER, `duration_minutes` INTEGER, `activity_kind` TEXT, `illness_impact` TEXT, `symptom_codes` TEXT NOT NULL, `comment` TEXT, `actual_time` TEXT, `utc_offset` TEXT, `time_zone` TEXT, `time_precision` TEXT NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metric",
+            "columnName": "metric",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valueCode",
+            "columnName": "value_code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "valueLabel",
+            "columnName": "value_label",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "scaleVersion",
+            "columnName": "scale_version",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daySlot",
+            "columnName": "day_slot",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationMinutes",
+            "columnName": "duration_minutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "activityKind",
+            "columnName": "activity_kind",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "illnessImpact",
+            "columnName": "illness_impact",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "symptomCodes",
+            "columnName": "symptom_codes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "actualTime",
+            "columnName": "actual_time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "utcOffset",
+            "columnName": "utc_offset",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "timeZone",
+            "columnName": "time_zone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "timePrecision",
+            "columnName": "time_precision",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_health_entries_user_id_date",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_health_entries_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_health_entries_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_health_entries_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          },
+          {
+            "name": "index_health_entries_user_id_date_metric_day_slot",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "date",
+              "metric",
+              "day_slot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_health_entries_user_id_date_metric_day_slot` ON `${TABLE_NAME}` (`user_id`, `date`, `metric`, `day_slot`)"
+          }
+        ]
+      },
+      {
+        "tableName": "water",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `glasses_count` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '')",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "glassesCount",
+            "columnName": "glasses_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_water_user_id_date",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_water_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_water_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_water_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "sleeps",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `wakeup_time` TEXT, `bed_time` TEXT, `quality_description` TEXT, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', `bed_date` TEXT DEFAULT NULL, `wakeup_date` TEXT DEFAULT NULL, `quality_rating` INTEGER DEFAULT NULL, `quality_label` TEXT DEFAULT NULL, `scale_version` INTEGER DEFAULT NULL, `awakenings` INTEGER DEFAULT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakeupTime",
+            "columnName": "wakeup_time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bedTime",
+            "columnName": "bed_time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "qualityDescription",
+            "columnName": "quality_description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "bedDate",
+            "columnName": "bed_date",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "wakeupDate",
+            "columnName": "wakeup_date",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "qualityRating",
+            "columnName": "quality_rating",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "qualityLabel",
+            "columnName": "quality_label",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "scaleVersion",
+            "columnName": "scale_version",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "awakenings",
+            "columnName": "awakenings",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sleeps_user_id_date",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sleeps_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_sleeps_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sleeps_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "notifications_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `type` TEXT NOT NULL, `date` TEXT NOT NULL, `sent_at` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentAt",
+            "columnName": "sent_at",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_notifications_log_user_id_type_date",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "type",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_notifications_log_user_id_type_date` ON `${TABLE_NAME}` (`user_id`, `type`, `date`)"
+          },
+          {
+            "name": "index_notifications_log_user_id_date_type",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "date",
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notifications_log_user_id_date_type` ON `${TABLE_NAME}` (`user_id`, `date`, `type`)"
+          }
+        ]
+      },
+      {
+        "tableName": "catalog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `kind` TEXT NOT NULL, `name` TEXT NOT NULL, `normalized_name` TEXT NOT NULL, `food_type` TEXT NOT NULL, `ingredients` TEXT NOT NULL, `archived` INTEGER NOT NULL, `public_id` TEXT NOT NULL DEFAULT '', `category_code` TEXT DEFAULT NULL, `product_kind` TEXT NOT NULL DEFAULT 'basic', `brand` TEXT NOT NULL DEFAULT '', `variant_label` TEXT NOT NULL DEFAULT '', `composition_state` TEXT NOT NULL DEFAULT 'unknown', `composition_source` TEXT DEFAULT NULL, `composition_checked_on` TEXT DEFAULT NULL, `comment` TEXT DEFAULT NULL, `revision` INTEGER NOT NULL DEFAULT 1, `favorite` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalized_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodType",
+            "columnName": "food_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ingredients",
+            "columnName": "ingredients",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "categoryCode",
+            "columnName": "category_code",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "productKind",
+            "columnName": "product_kind",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'basic'"
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "variantLabel",
+            "columnName": "variant_label",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "compositionState",
+            "columnName": "composition_state",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'unknown'"
+          },
+          {
+            "fieldPath": "compositionSource",
+            "columnName": "composition_source",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "compositionCheckedOn",
+            "columnName": "composition_checked_on",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "favorite",
+            "columnName": "favorite",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_catalog_kind_food_type_normalized_name",
+            "unique": false,
+            "columnNames": [
+              "kind",
+              "food_type",
+              "normalized_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_catalog_kind_food_type_normalized_name` ON `${TABLE_NAME}` (`kind`, `food_type`, `normalized_name`)"
+          },
+          {
+            "name": "index_catalog_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_catalog_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "meal_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `meal_id` INTEGER NOT NULL, `catalog_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `food_type` TEXT NOT NULL, `ingredients` TEXT NOT NULL, `kind` TEXT NOT NULL DEFAULT 'dish', `public_id` TEXT NOT NULL DEFAULT '', `source_revision` INTEGER DEFAULT NULL, `composition_snapshot` TEXT DEFAULT NULL, `quantity` TEXT DEFAULT NULL, `unit` TEXT DEFAULT NULL, `comment` TEXT DEFAULT NULL, FOREIGN KEY(`meal_id`) REFERENCES `meals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`catalog_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealId",
+            "columnName": "meal_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogId",
+            "columnName": "catalog_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodType",
+            "columnName": "food_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ingredients",
+            "columnName": "ingredients",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'dish'"
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sourceRevision",
+            "columnName": "source_revision",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "compositionSnapshot",
+            "columnName": "composition_snapshot",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_meal_items_meal_id",
+            "unique": false,
+            "columnNames": [
+              "meal_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_meal_items_meal_id` ON `${TABLE_NAME}` (`meal_id`)"
+          },
+          {
+            "name": "index_meal_items_catalog_id",
+            "unique": false,
+            "columnNames": [
+              "catalog_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_meal_items_catalog_id` ON `${TABLE_NAME}` (`catalog_id`)"
+          },
+          {
+            "name": "index_meal_items_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_meal_items_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "meals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "meal_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "catalog_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "medicine_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `medicine_id` INTEGER NOT NULL, `catalog_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `dosage` TEXT, `public_id` TEXT NOT NULL DEFAULT '', `source_revision` INTEGER DEFAULT NULL, `quantity` TEXT DEFAULT NULL, `unit` TEXT DEFAULT NULL, `comment` TEXT DEFAULT NULL, FOREIGN KEY(`medicine_id`) REFERENCES `medicines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`catalog_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicineId",
+            "columnName": "medicine_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogId",
+            "columnName": "catalog_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosage",
+            "columnName": "dosage",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "sourceRevision",
+            "columnName": "source_revision",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_medicine_items_medicine_id",
+            "unique": false,
+            "columnNames": [
+              "medicine_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medicine_items_medicine_id` ON `${TABLE_NAME}` (`medicine_id`)"
+          },
+          {
+            "name": "index_medicine_items_catalog_id",
+            "unique": false,
+            "columnNames": [
+              "catalog_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_medicine_items_catalog_id` ON `${TABLE_NAME}` (`catalog_id`)"
+          },
+          {
+            "name": "index_medicine_items_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_medicine_items_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "medicines",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medicine_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "catalog_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "dish_products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dish_id` INTEGER NOT NULL, `product_id` INTEGER NOT NULL, `quantity` TEXT DEFAULT NULL, `unit` TEXT DEFAULT NULL, `position` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`dish_id`, `product_id`), FOREIGN KEY(`dish_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`product_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "dishId",
+            "columnName": "dish_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dish_id",
+            "product_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_dish_products_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dish_products_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "catalog",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "dish_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "backup_aliases",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`source_id` TEXT NOT NULL, `target_id` TEXT NOT NULL, `type` TEXT NOT NULL, PRIMARY KEY(`source_id`))",
+        "fields": [
+          {
+            "fieldPath": "sourceId",
+            "columnName": "source_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetId",
+            "columnName": "target_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "source_id"
+          ]
+        }
+      },
+      {
+        "tableName": "product_components",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_id` INTEGER NOT NULL, `product_id` INTEGER NOT NULL, `quantity` TEXT DEFAULT NULL, `unit` TEXT DEFAULT NULL, `position` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`owner_id`, `product_id`), FOREIGN KEY(`owner_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`product_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "ownerId",
+            "columnName": "owner_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_id",
+            "product_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_product_components_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_product_components_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "catalog",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "owner_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "day_status",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `food_complete` INTEGER NOT NULL DEFAULT 0, `symptoms_complete` INTEGER NOT NULL DEFAULT 0, `stool_summary` TEXT DEFAULT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodComplete",
+            "columnName": "food_complete",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "symptomsComplete",
+            "columnName": "symptoms_complete",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "stoolSummary",
+            "columnName": "stool_summary",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_day_status_user_id_date",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_day_status_user_id_date` ON `${TABLE_NAME}` (`user_id`, `date`)"
+          },
+          {
+            "name": "index_day_status_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_day_status_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tracking_targets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` INTEGER NOT NULL, `catalog_id` INTEGER NOT NULL, `scope` TEXT NOT NULL, `name_snapshot` TEXT NOT NULL, `source_note` TEXT, `comment` TEXT, `active` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL, FOREIGN KEY(`catalog_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogId",
+            "columnName": "catalog_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scope",
+            "columnName": "scope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameSnapshot",
+            "columnName": "name_snapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceNote",
+            "columnName": "source_note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tracking_targets_catalog_id",
+            "unique": false,
+            "columnNames": [
+              "catalog_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tracking_targets_catalog_id` ON `${TABLE_NAME}` (`catalog_id`)"
+          },
+          {
+            "name": "index_tracking_targets_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_tracking_targets_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          },
+          {
+            "name": "index_tracking_targets_user_id_catalog_id_scope",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "catalog_id",
+              "scope"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_tracking_targets_user_id_catalog_id_scope` ON `${TABLE_NAME}` (`user_id`, `catalog_id`, `scope`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "catalog_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "product_links",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `catalog_id` INTEGER NOT NULL, `url` TEXT NOT NULL, `source` TEXT NOT NULL, `checked_on` TEXT, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `public_id` TEXT NOT NULL, FOREIGN KEY(`catalog_id`) REFERENCES `catalog`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogId",
+            "columnName": "catalog_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkedOn",
+            "columnName": "checked_on",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "public_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_product_links_catalog_id_url",
+            "unique": true,
+            "columnNames": [
+              "catalog_id",
+              "url"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_product_links_catalog_id_url` ON `${TABLE_NAME}` (`catalog_id`, `url`)"
+          },
+          {
+            "name": "index_product_links_public_id",
+            "unique": true,
+            "columnNames": [
+              "public_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_product_links_public_id` ON `${TABLE_NAME}` (`public_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "catalog",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "catalog_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0da45fe24202835068e5a7998dc91ff0')"
+    ]
+  }
+}

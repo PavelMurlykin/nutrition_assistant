@@ -216,6 +216,15 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
         file.records.filter { it.type == "tracking_targets" && it.publicId !in mapping }.forEach { record ->
             localTargets[listOf(mapping[record.values["catalog_id"]] ?: record.values["catalog_id"], record.values["scope"])]?.let { mapping[record.publicId] = it.publicId }
         }
+        val localLinks = localByType["product_links"].orEmpty().associateBy { it.values["catalog_id"] to it.values["url"] }
+        val fileLinks = fileByType["product_links"].orEmpty()
+        fileLinks.filter { it.publicId !in mapping }.forEach { record ->
+            val catalogId = record.values["catalog_id"]
+            val key = (mapping[catalogId] ?: catalogId) to record.values["url"]
+            localLinks[key]?.let { mapping[record.publicId] = it.publicId }
+        }
+        val linkTargets = fileLinks.mapNotNull { mapping[it.publicId] }
+        require(linkTargets.size == linkTargets.distinct().size) { "Неоднозначное сопоставление ссылок." }
         file.records.filter { it.publicId !in mapping }.forEach { record ->
             dailyKey(record)?.let { key -> dailyByKey[key]?.let { mapping[record.publicId] = it.publicId } }
         }
@@ -250,7 +259,7 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
                 require(parent == null) { "Позиция события уже принадлежит другой записи. Импорт остановлен." }
                 if (table in setOf("meals", "medicines")) existingParents += record.publicId
                 if (signature(record, true) != signature(target, false)) {
-                    conflicts += ImportIssue(record.values["name"]?.toString() ?: "${tableTitle(table)} · ${record.values["date"]}",
+                    conflicts += ImportIssue(record.values["name"]?.toString() ?: record.values["source"]?.toString() ?: "${tableTitle(table)} · ${record.values["date"]}",
                         if (table == "catalog") "Справочник различается. По умолчанию сохраняется локальный; восстановление состава и архива выбирается отдельно ниже."
                         else "Данные различаются. Локальная запись и её позиции останутся без изменений.")
                 }
@@ -284,5 +293,5 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
 fun tableTitle(type: String): String = when (type) {
     "users" -> "Настройки"; "catalog" -> "Справочник"; "meals" -> "Приёмы пищи"; "medicines" -> "Приёмы лекарств"
     "stools" -> "Стул"; "health_entries" -> "Наблюдения состояния"; "water" -> "Вода"; "sleeps" -> "Сон"
-    "tracking_targets" -> "Что отслеживать"; "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
+    "product_links" -> "Ссылки на товары"; "tracking_targets" -> "Что отслеживать"; "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
 }

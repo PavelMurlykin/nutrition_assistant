@@ -90,10 +90,16 @@ internal object BackupSchema {
             }
         }
     }
-    val tables = LinkedHashMap(versionFour).apply {
+    val versionFive = LinkedHashMap(versionFour).apply {
         put("tracking_targets", BackupTable(fields = fields("user_id" to ValueKind.REFERENCE, "catalog_id" to ValueKind.REFERENCE,
             "scope" to ValueKind.TEXT, "name_snapshot" to ValueKind.TEXT, "source_note" to ValueKind.OPTIONAL_TEXT, "comment" to ValueKind.OPTIONAL_TEXT,
             "active" to ValueKind.BOOLEAN) + times))
+    }
+    val tables = LinkedHashMap(versionFive).apply {
+        put("product_links", BackupTable(fields = fields(
+            "catalog_id" to ValueKind.REFERENCE, "url" to ValueKind.TEXT, "source" to ValueKind.TEXT,
+            "checked_on" to ValueKind.OPTIONAL_TEXT,
+        ) + times))
     }
     fun upgradeThree(record: BackupRecord): BackupRecord = when (record.type) {
         "feelings" -> record.copy(type = "health_entries", values = (record.values - "description") + mapOf("metric" to "wellbeing", "value_code" to null,
@@ -131,7 +137,7 @@ internal object BackupSchema {
 
 object BackupCodec {
     const val APPLICATION_ID = "com.pamurlykin.nutritionassistant"
-    const val VERSION = 5
+    const val VERSION = 6
     const val MAX_BYTES = 16 * 1024 * 1024
     const val MAX_ITEMS = 100_000
 
@@ -154,7 +160,7 @@ object BackupCodec {
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString().removePrefix("\uFEFF")
             val root = JsonValues.readObject(text)
             require(root["applicationId"] == APPLICATION_ID) { "Это резервная копия другого приложения." }
-            require(root["schemaVersion"] in setOf(1L, 2L, 3L, 4L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
+            require(root["schemaVersion"] in setOf(1L, 2L, 3L, 4L, 5L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
             val expectedKeys = setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases") + if ((root["schemaVersion"] as Long) >= 4L) setOf("scales") else emptySet()
             require(root.keys == expectedKeys) { "Неподдерживаемые поля JSON." }
             if ((root["schemaVersion"] as Long) >= 4L) require(root["scales"] == HealthScales.dictionary()) { "Неизвестные определения шкал." }
@@ -182,6 +188,7 @@ object BackupCodec {
                 return BackupSchema.upgradeFile(file).also { validate(it) }
             }
             if (root["schemaVersion"] == 4L) validate(file, versionFour = true)
+            if (root["schemaVersion"] == 5L) validate(file, versionFive = true)
             return file.also { validate(it) }
         } catch (failure: Exception) {
             // Never put imported text or parser diagnostics containing user data into UI/logs.
@@ -215,14 +222,21 @@ object BackupCodec {
     private fun Any?.asList(): List<*> = this as? List<*> ?: error("Expected array")
 
     @Suppress("UNCHECKED_CAST")
-    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false, versionThree: Boolean = false, versionFour: Boolean = false) {
+    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false, versionThree: Boolean = false, versionFour: Boolean = false, versionFive: Boolean = false) {
         require(file.appVersion.isNotBlank() && file.appVersion.length <= 100)
         Instant.parse(file.exportedAt)
         val modern = !legacy && !versionTwo && !versionThree
         val byId = file.records.associateBy { it.publicId }
         require(byId.size == file.records.size && file.records.size <= MAX_ITEMS)
         require(file.records.count { it.type == "users" } == 1)
-        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else if (versionThree) BackupSchema.versionThree else if (versionFour) BackupSchema.versionFour else BackupSchema.tables
+        val tables = when {
+            legacy -> BackupSchema.versionOne
+            versionTwo -> BackupSchema.versionTwo
+            versionThree -> BackupSchema.versionThree
+            versionFour -> BackupSchema.versionFour
+            versionFive -> BackupSchema.versionFive
+            else -> BackupSchema.tables
+        }
         var itemCount = file.records.size.toLong() + file.aliases.size
         val dailyKeys = hashSetOf<List<Any?>>()
         val positions = hashSetOf<List<Any?>>()
@@ -262,6 +276,12 @@ object BackupCodec {
                 if (key in setOf("dosage", "comment")) require(value == null || (value as String).length <= 1000 || record.type == "health_entries")
             }
             val v = record.values
+            if (record.type == "product_links") {
+                require(byId[v["catalog_id"]]?.values?.get("kind") == CatalogKind.PRODUCT)
+                val draft = ProductLinkDraft(v["url"] as String, v["source"] as String, v["checked_on"] as String?)
+                require(draft == draft.validated()) { "Недопустимая ссылка или подпись." }
+                require(dailyKeys.add(listOf(record.type, v["catalog_id"], draft.url)))
+            }
             if (record.type == "tracking_targets") {
                 require(v["scope"] in setOf("entry", "ingredient"))
                 val kind = byId[v["catalog_id"]]?.values?.get("kind")

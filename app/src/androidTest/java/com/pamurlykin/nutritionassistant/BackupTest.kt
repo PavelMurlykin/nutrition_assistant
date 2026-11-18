@@ -154,7 +154,7 @@ class BackupTest {
         val bytes = store.export()
         val text = bytes.toString(Charsets.UTF_8)
         val unknown = JSONObject(text).put("unexpected", true).toString()
-        val wrongVersion = JSONObject(text).put("schemaVersion", 6).toString()
+        val wrongVersion = JSONObject(text).put("schemaVersion", 7).toString()
         val duplicate = text.replaceFirst("{", "{\"schemaVersion\":1,")
         val trailing = "$text {}"
         val invalidDate = text.replace(day, "2026-02-30")

@@ -30,7 +30,7 @@ class MigrationTest {
         }
         helper.runMigrationsAndValidate("migration-test", 8, true, NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7, NutritionDatabase.MIGRATION_7_8).close()
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7, NutritionDatabase.MIGRATION_7_8).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7, NutritionDatabase.MIGRATION_7_8, NutritionDatabase.MIGRATION_8_9).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -64,7 +64,7 @@ class MigrationTest {
             close()
         }
         val db = Room.databaseBuilder(context, NutritionDatabase::class.java, "migration-test")
-            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7, NutritionDatabase.MIGRATION_7_8).build()
+            .addMigrations(NutritionDatabase.MIGRATION_1_2, NutritionDatabase.MIGRATION_2_3, NutritionDatabase.MIGRATION_3_4, NutritionDatabase.MIGRATION_4_5, NutritionDatabase.MIGRATION_5_6, NutritionDatabase.MIGRATION_6_7, NutritionDatabase.MIGRATION_7_8, NutritionDatabase.MIGRATION_8_9).build()
         try {
             val repository = NutritionRepository(db)
             repository.initialize()
@@ -174,6 +174,23 @@ class MigrationTest {
         helper.runMigrationsAndValidate("migration-test",8,true,NutritionDatabase.MIGRATION_7_8).use { db ->
             db.query("SELECT COUNT(*) FROM tracking_targets").use { assertTrue(it.moveToFirst());assertEquals(0,it.getInt(0)) }
             db.query("SELECT quality,public_id FROM stools").use { assertTrue(it.moveToFirst());assertEquals(7,it.getInt(0));assertEquals("11111111-1111-4111-8111-111111111111",it.getString(1)) }
+        }
+    }
+
+    @Test fun versionEightAddsEmptyProductLinksAndPreservesStoolRecord() {
+        helper.createDatabase("migration-test", 8).use { db ->
+            db.execSQL("INSERT INTO stools (id,user_id,date,quality,created_at,updated_at,public_id) VALUES (1,1,'2026-11-18',7,'2026-11-18T10:00:00','2026-11-18T10:00:00','11111111-1111-4111-8111-111111111111')")
+        }
+        helper.runMigrationsAndValidate("migration-test", 9, true, NutritionDatabase.MIGRATION_8_9).use { db ->
+            db.query("SELECT COUNT(*) FROM product_links").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.query("SELECT quality,public_id FROM stools").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(7, cursor.getInt(0))
+                assertEquals("11111111-1111-4111-8111-111111111111", cursor.getString(1))
+            }
         }
     }
 }

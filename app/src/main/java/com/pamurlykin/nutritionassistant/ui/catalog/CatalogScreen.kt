@@ -25,6 +25,7 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
     val conflicts by viewModel.seedConflicts.collectAsStateWithLifecycle()
     var resolvingSeed by rememberSaveable { mutableStateOf<String?>(null) }
     var viewingId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var linksId by rememberSaveable { mutableStateOf<Long?>(null) }
     var category by rememberSaveable { mutableStateOf<String?>(null) }
     var quick by rememberSaveable { mutableStateOf("all") }
     var archived by rememberSaveable { mutableStateOf(false) }
@@ -71,6 +72,8 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
                     Text(compositionTitle(item.entry.compositionState), style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = { viewingId = item.id }) { Text("Состав и источники") }
                 }
+                if (item.kind == CatalogKind.PRODUCT) TextButton(enabled = !busy, onClick = { linksId = item.id },
+                    modifier = Modifier.testTag("product-links-${item.id}")) { Text("Ссылки на товар") }
                 item.entry.comment?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 TextButton(enabled = !busy, onClick = { viewModel.favorite(item.id, !item.entry.favorite) }, modifier = Modifier.testTag("favorite-${item.id}")) { Text(if (item.entry.favorite) "Убрать из избранного" else "В избранное") }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -85,6 +88,9 @@ fun CatalogScreen(viewModel: DailyStatsViewModel) {
         onDismiss = { archiveId = null }, onConfirm = { archiveId = null; viewModel.archiveCatalog(id) }) }
     if (editing && (entryId == null || entry != null)) CatalogEditor(kind = kind, initial = entry, initialType = type, entries = entries, busy = busy,
         onDismiss = { editing = false }, onCreate = viewModel::saveDraft, onSave = { draft -> viewModel.saveDraft(draft) { editing = false } })
+    entries.find { it.id == linksId && it.kind == CatalogKind.PRODUCT }?.let { product ->
+        key(product.id) { ProductLinksDialog(product, viewModel, busy) { linksId = null } }
+    }
     viewingId?.let { id -> CompositionDialog(runCatching { CompositionSnapshot.encode(catalogSnapshot(id, entries)) }.getOrNull()) { viewingId = null } }
     conflicts.find { it.seed.key == resolvingSeed }?.let { conflict ->
         AppDialog(onDismissRequest = { resolvingSeed = null }, title = { Text("Встроенный продукт: " + conflict.seed.name) },

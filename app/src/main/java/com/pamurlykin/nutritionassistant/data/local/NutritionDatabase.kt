@@ -27,8 +27,9 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         ProductComponentEntity::class,
         DayStatusEntity::class,
         TrackingTargetEntity::class,
+        ProductLinkEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(IngredientConverters::class)
@@ -44,8 +45,17 @@ abstract class NutritionDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun dayStatusDao(): DayStatusDao
     abstract fun analyticsDao(): AnalyticsDao
+    abstract fun productLinkDao(): ProductLinkDao
 
     companion object {
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE product_links (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, catalog_id INTEGER NOT NULL, url TEXT NOT NULL, source TEXT NOT NULL, checked_on TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL, FOREIGN KEY(catalog_id) REFERENCES catalog(id) ON UPDATE NO ACTION ON DELETE NO ACTION)")
+                db.execSQL("CREATE UNIQUE INDEX index_product_links_catalog_id_url ON product_links (catalog_id, url)")
+                db.execSQL("CREATE UNIQUE INDEX index_product_links_public_id ON product_links (public_id)")
+            }
+        }
+
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE tracking_targets (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, catalog_id INTEGER NOT NULL, scope TEXT NOT NULL, name_snapshot TEXT NOT NULL, source_note TEXT, comment TEXT, active INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL, FOREIGN KEY(catalog_id) REFERENCES catalog(id) ON UPDATE NO ACTION ON DELETE NO ACTION)")
@@ -166,6 +176,6 @@ abstract class NutritionDatabase : RoomDatabase() {
                 context,
                 NutritionDatabase::class.java,
                 "nutrition_assistant.db",
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build()
     }
 }

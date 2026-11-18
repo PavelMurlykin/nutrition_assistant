@@ -21,6 +21,7 @@ class NutritionRepository(private val database: NutritionDatabase) {
     val foodCatalog = FoodCatalog(database)
     val health = HealthRepository(database)
     val analytics = AnalyticsRepository(database)
+    val productLinks = ProductLinkRepository(database)
     fun observeAnalyticsHistory(): Flow<AnalysisHistory> = flow { initialize(); emitAll(analytics.observe(LocalUserDefaults.USER_ID)) }
     private val initialization = Mutex()
     private var catalogInitialized = false

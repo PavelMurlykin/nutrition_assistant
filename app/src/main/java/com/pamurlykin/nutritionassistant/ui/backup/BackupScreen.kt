@@ -49,7 +49,7 @@ fun BackupScreen(viewModel: BackupViewModel) {
         item { Text("Данные", style = MaterialTheme.typography.headlineMedium) }
         item { NutritionCard {
             Text("Резервные копии", style = MaterialTheme.typography.titleLarge)
-            Text("JSON сохраняет весь дневник, справочники, архивные позиции, состав записанных приёмов пищи и настройки напоминаний.")
+            Text("JSON сохраняет весь дневник, справочники, архивные позиции, состав записанных приёмов пищи, ссылки на товары и настройки напоминаний.")
             Text("Файл не зашифрован и содержит сведения о здоровье. Выбирайте место хранения и получателя внимательно.")
             Button(enabled = !busy && preview == null, onClick = viewModel::prepareExport, modifier = Modifier.testTag("export-backup")) { Text("Экспорт резервной копии") }
             OutlinedButton(enabled = !busy && preview == null, onClick = { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, modifier = Modifier.testTag("import-backup")) { Text("Импорт из JSON") }
@@ -57,7 +57,7 @@ fun BackupScreen(viewModel: BackupViewModel) {
         item { DiaryExportCard(!busy && preview == null) { showDiary = true } }
         if (busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Выполняется операция…") }
         if (message != null) item { Text(message.orEmpty(), modifier = Modifier.testTag("backup-message")) }
-        item { Text("Импорт сначала показывает проверку. До нажатия «Применить импорт» дневник не меняется. Существующая база не очищается. Экспорт JSON 5, импорт JSON 1–5; лимит 16 МиБ и 100 000 объектов и компонентов.") }
+        item { Text("Импорт сначала показывает проверку. До нажатия «Применить импорт» дневник не меняется. Существующая база не очищается. Экспорт JSON 6, импорт JSON 1–6; лимит 16 МиБ и 100 000 объектов и компонентов.") }
         item { Text("После закрытия процесса выберите файл заново. Прерванный экспорт может оставить неполный файл: сохраните новую копию и проверьте её импортом.") }
     }
     if (showDiary && !diarySaved) {

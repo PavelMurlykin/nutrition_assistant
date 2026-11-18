@@ -1,0 +1,382 @@
+{
+  "applicationId": "com.pamurlykin.nutritionassistant",
+  "schemaVersion": 6,
+  "appVersion": "0.13.0",
+  "exportedAt": "2026-11-17T08:00:00Z",
+  "records": [
+    {
+      "type": "users",
+      "publicId": "00000000-0000-4000-8000-000000000001",
+      "values": {
+        "breakfast_time": "08:00",
+        "lunch_time": "13:00",
+        "dinner_time": "19:00",
+        "toilet_time": "09:00",
+        "wakeup_time": "07:00",
+        "bed_time": "23:00",
+        "breakfast_enabled": true,
+        "lunch_enabled": false,
+        "dinner_enabled": true,
+        "toilet_enabled": true,
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00"
+      }
+    },
+    {
+      "type": "catalog",
+      "publicId": "00000000-0000-4000-8000-000000000002",
+      "values": {
+        "kind": "product",
+        "name": "Пример: молоко",
+        "normalized_name": "пример: молоко",
+        "food_type": "",
+        "ingredients": [],
+        "archived": false,
+        "category_code": "dairy",
+        "product_kind": "basic",
+        "brand": "",
+        "variant_label": "",
+        "composition_state": "unknown",
+        "composition_source": null,
+        "composition_checked_on": null,
+        "comment": null,
+        "revision": 1,
+        "component_links": [],
+        "favorite": true
+      }
+    },
+    {
+      "type": "catalog",
+      "publicId": "00000000-0000-4000-8000-000000000003",
+      "values": {
+        "kind": "dish",
+        "name": "Пример: тестовое блюдо",
+        "normalized_name": "пример: тестовое блюдо",
+        "food_type": "home",
+        "ingredients": [],
+        "archived": false,
+        "category_code": null,
+        "product_kind": "basic",
+        "brand": "",
+        "variant_label": "",
+        "composition_state": "partial",
+        "composition_source": null,
+        "composition_checked_on": null,
+        "comment": null,
+        "revision": 1,
+        "component_links": [
+          {
+            "product_id": "00000000-0000-4000-8000-000000000002",
+            "quantity": "100",
+            "unit": "ml",
+            "position": 0
+          }
+        ],
+        "favorite": false
+      }
+    },
+    {
+      "type": "meals",
+      "publicId": "00000000-0000-4000-8000-000000000004",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-11-17",
+        "meal_type": "breakfast",
+        "description": "Пример: тестовое блюдо",
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00",
+        "actual_time": "08:00",
+        "utc_offset": "+03:00",
+        "time_zone": "Europe/Moscow",
+        "time_precision": "date_time",
+        "comment": "Синтетический пример"
+      }
+    },
+    {
+      "type": "meal_items",
+      "publicId": "00000000-0000-4000-8000-000000000005",
+      "values": {
+        "meal_id": "00000000-0000-4000-8000-000000000004",
+        "catalog_id": "00000000-0000-4000-8000-000000000003",
+        "name": "Пример: тестовое блюдо",
+        "food_type": "home",
+        "ingredients": [
+          "Пример: молоко"
+        ],
+        "kind": "dish",
+        "position": 0,
+        "source_revision": 1,
+        "quantity": "1",
+        "unit": "piece",
+        "comment": null,
+        "composition_snapshot": {
+          "version": 1,
+          "root": {
+            "id": "00000000-0000-4000-8000-000000000003",
+            "name": "Пример: тестовое блюдо",
+            "kind": "dish",
+            "revision": 1,
+            "metadata": {
+              "category": null,
+              "product_kind": "basic",
+              "brand": "",
+              "variant": "",
+              "composition": "partial",
+              "source": null,
+              "checked_on": null,
+              "comment": null
+            },
+            "quantity": null,
+            "unit": null,
+            "legacy_ingredients": [],
+            "components": [
+              {
+                "id": "00000000-0000-4000-8000-000000000002",
+                "name": "Пример: молоко",
+                "kind": "product",
+                "revision": 1,
+                "metadata": {
+                  "category": "dairy",
+                  "product_kind": "basic",
+                  "brand": "",
+                  "variant": "",
+                  "composition": "unknown",
+                  "source": null,
+                  "checked_on": null,
+                  "comment": null
+                },
+                "quantity": "100",
+                "unit": "ml",
+                "legacy_ingredients": [],
+                "components": []
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "health_entries",
+      "publicId": "00000000-0000-4000-8000-000000000011",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-11-17",
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00",
+        "actual_time": null,
+        "utc_offset": null,
+        "time_zone": null,
+        "time_precision": "date_only",
+        "comment": null,
+        "metric": "stress",
+        "value_code": "0",
+        "value_label": "Отсутствовал",
+        "scale_version": 1,
+        "period": "day",
+        "day_slot": 1,
+        "duration_minutes": null,
+        "activity_kind": null,
+        "illness_impact": null,
+        "symptom_codes": []
+      }
+    },
+    {
+      "type": "health_entries",
+      "publicId": "00000000-0000-4000-8000-000000000012",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-11-17",
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00",
+        "actual_time": null,
+        "utc_offset": null,
+        "time_zone": null,
+        "time_precision": "date_only",
+        "comment": null,
+        "metric": "illness",
+        "value_code": "unknown",
+        "value_label": "Не знаю",
+        "scale_version": 1,
+        "period": "day",
+        "day_slot": 1,
+        "duration_minutes": null,
+        "activity_kind": null,
+        "illness_impact": null,
+        "symptom_codes": []
+      }
+    },
+    {
+      "type": "sleeps",
+      "publicId": "00000000-0000-4000-8000-000000000013",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-11-17",
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00",
+        "wakeup_time": null,
+        "bed_time": null,
+        "quality_description": "Пример: проснулся отдохнувшим",
+        "bed_date": null,
+        "wakeup_date": null,
+        "quality_rating": 4,
+        "quality_label": "Хорошее",
+        "scale_version": 1,
+        "awakenings": 0
+      }
+    },
+    {
+      "type": "stools",
+      "publicId": "00000000-0000-4000-8000-000000000014",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-11-17",
+        "created_at": "2026-11-17T08:00:00",
+        "updated_at": "2026-11-17T08:00:00",
+        "actual_time": null,
+        "utc_offset": null,
+        "time_zone": null,
+        "time_precision": "date_only",
+        "comment": null,
+        "quality": 3,
+        "quality_label": "3 · Оформленный, с трещинами",
+        "scale_version": 1,
+        "urgency": 0,
+        "pain": null
+      }
+    },
+    {
+      "type": "tracking_targets",
+      "publicId": "00000000-0000-4000-8000-000000000015",
+      "values": {
+        "user_id": "00000000-0000-4000-8000-000000000001",
+        "catalog_id": "00000000-0000-4000-8000-000000000002",
+        "scope": "ingredient",
+        "name_snapshot": "Пример: молоко",
+        "source_note": "Пример: собственное предположение",
+        "comment": "Пример: требуется наблюдение, непереносимость не подтверждена",
+        "active": true,
+        "created_at": "2026-11-18T08:00:00",
+        "updated_at": "2026-11-18T08:00:00"
+      }
+    },
+    {
+      "type": "product_links",
+      "publicId": "c6ae4eb7-5b84-4ca9-8688-b2ebe72d75ed",
+      "values": {
+        "catalog_id": "00000000-0000-4000-8000-000000000002",
+        "url": "https://shop.example/food/123",
+        "source": "Полка (пример)",
+        "checked_on": "2026-11-18",
+        "created_at": "2026-11-18T09:00:00",
+        "updated_at": "2026-11-18T09:00:00"
+      }
+    }
+  ],
+  "aliases": [],
+  "scales": {
+    "stress": {
+      "version": 1,
+      "values": {
+        "0": "Отсутствовал",
+        "1": "Слабый",
+        "2": "Умеренный",
+        "3": "Сильный",
+        "4": "Очень сильный"
+      }
+    },
+    "activity": {
+      "version": 1,
+      "values": {
+        "none": "Не было",
+        "light": "Лёгкая",
+        "moderate": "Умеренная",
+        "vigorous": "Высокая"
+      }
+    },
+    "wellbeing": {
+      "version": 1,
+      "values": {
+        "1": "Очень плохое",
+        "2": "Плохое",
+        "3": "Среднее",
+        "4": "Хорошее",
+        "5": "Очень хорошее"
+      }
+    },
+    "illness": {
+      "version": 1,
+      "values": {
+        "none": "Нет признаков",
+        "present": "Есть признаки",
+        "unknown": "Не знаю"
+      }
+    },
+    "sleep": {
+      "version": 1,
+      "values": {
+        "1": "Очень плохое",
+        "2": "Плохое",
+        "3": "Среднее",
+        "4": "Хорошее",
+        "5": "Очень хорошее"
+      }
+    },
+    "urgency": {
+      "version": 1,
+      "values": {
+        "0": "Нет",
+        "1": "Умеренная",
+        "2": "Сильная"
+      }
+    },
+    "pain": {
+      "version": 1,
+      "values": {
+        "0": "Нет",
+        "1": "Слабая",
+        "2": "Умеренная",
+        "3": "Сильная"
+      }
+    },
+    "illness_impact": {
+      "version": 1,
+      "values": {
+        "mild": "Лёгкое",
+        "moderate": "Умеренное",
+        "severe": "Тяжёлое"
+      }
+    },
+    "symptom_codes": {
+      "version": 1,
+      "values": {
+        "digestive": "Пищеварительные",
+        "respiratory": "Респираторные",
+        "fever": "Повышение температуры",
+        "other": "Другие"
+      }
+    },
+    "activity_kind": {
+      "version": 1,
+      "values": {
+        "walking": "Ходьба",
+        "running": "Бег",
+        "cycling": "Велосипед",
+        "strength": "Силовая нагрузка",
+        "housework": "Домашние дела",
+        "other": "Другая"
+      }
+    },
+    "bristol": {
+      "version": 1,
+      "values": {
+        "1": "1 · Отдельные твердые комочки (запор)",
+        "2": "2 · Комковатый плотный стул (запор)",
+        "3": "3 · Оформленный, с трещинами",
+        "4": "4 · Гладкий, мягкий, оформленный",
+        "5": "5 · Мягкие отдельные кусочки",
+        "6": "6 · Кашицеобразный (понос)",
+        "7": "7 · Водянистый (понос)"
+      }
+    }
+  }
+}
