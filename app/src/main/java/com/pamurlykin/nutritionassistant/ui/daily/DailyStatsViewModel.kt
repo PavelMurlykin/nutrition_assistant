@@ -24,6 +24,21 @@ class DailyStatsViewModel(
     val catalog = repository.observeCatalogGraph().catch { error.value = it.message ?: "Не удалось открыть справочник." }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val analysisDays = savedState.getStateFlow("analysisDays", 90)
+    val analysisHistory = repository.observeAnalyticsHistory().map<AnalysisHistory,AnalysisHistory?> { it }
+        .catch { error.value = it.message ?: "Не удалось открыть историю анализа." }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val explainableReport = combine(analysisHistory, selectedDate, analysisDays) { history, date, days -> Triple(history,date,days) }
+        .mapLatest { (history,date,days) -> history?.let { withContext(Dispatchers.Default) { ExplainableAnalyzer.analyze(it,date,days) } } }
+        .catch { error.value = it.message ?: "Не удалось рассчитать наблюдения." }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun setAnalysisDays(days: Int) { require(days in setOf(30,90,365)); savedState["analysisDays"] = days }
+    fun saveTrackingTarget(id: Long?, catalogId: Long, scope: String, source: String?, comment: String?, active: Boolean, onSuccess: () -> Unit) = perform(onSuccess) {
+        repository.analytics.saveTarget(LocalUserDefaults.USER_ID,id,catalogId,scope,source,comment,active)
+    }
+    fun activateTarget(id: Long, active: Boolean) = perform { repository.analytics.setActive(LocalUserDefaults.USER_ID,id,active) }
+
     val seedConflicts = repository.observeSeedConflicts().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val recentIds = repository.observeRecentCatalogIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val recentMeals = repository.observeRecentMeals().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

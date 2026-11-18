@@ -27,6 +27,9 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
     var compositionItem by rememberSaveable { mutableStateOf<Long?>(null) }
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val calendar by viewModel.calendar.collectAsStateWithLifecycle()
+    val analysisHistory by viewModel.analysisHistory.collectAsStateWithLifecycle()
+    val explainable by viewModel.explainableReport.collectAsStateWithLifecycle()
+    val analysisDays by viewModel.analysisDays.collectAsStateWithLifecycle()
     var dialogKey by rememberSaveable { mutableStateOf<String?>(null) }
     var dialogDate by rememberSaveable { mutableStateOf(state.selectedDate.toString()) }
     LaunchedEffect(state.selectedDate) {
@@ -105,7 +108,8 @@ fun DailyStatsScreen(viewModel: DailyStatsViewModel) {
                     TextButton(enabled = !busy, onClick = { openDialog(DailyDialog.Stool(null)) }) { Text("Добавить") }
                 }
             }
-            item { StoolAnalysisCard(snapshot.analysis) }
+            item { ExplainableAnalysisCard(snapshot.date, analysisHistory, explainable?.takeIf { it.selectedDate==snapshot.date && it.requestedDays==analysisDays },
+                analysisDays, entries, busy, viewModel::setAnalysisDays, { viewModel.setDate(java.time.LocalDate.parse(it)) }, viewModel::saveTrackingTarget, viewModel::activateTarget) }
             item {
                 NutritionCard(modifier = Modifier.testTag("health-day-card")) {
                     CardHeadline("Состояние за день")

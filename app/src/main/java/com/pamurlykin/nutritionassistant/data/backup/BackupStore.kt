@@ -212,6 +212,10 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
             else -> null
         }
         val dailyByKey = local.records.mapNotNull { record -> dailyKey(record)?.let { it to record } }.toMap()
+        val localTargets = local.records.filter { it.type == "tracking_targets" }.associateBy { listOf(it.values["catalog_id"], it.values["scope"]) }
+        file.records.filter { it.type == "tracking_targets" && it.publicId !in mapping }.forEach { record ->
+            localTargets[listOf(mapping[record.values["catalog_id"]] ?: record.values["catalog_id"], record.values["scope"])]?.let { mapping[record.publicId] = it.publicId }
+        }
         file.records.filter { it.publicId !in mapping }.forEach { record ->
             dailyKey(record)?.let { key -> dailyByKey[key]?.let { mapping[record.publicId] = it.publicId } }
         }
@@ -280,5 +284,5 @@ class BackupStore(private val database: NutritionDatabase, private val appVersio
 fun tableTitle(type: String): String = when (type) {
     "users" -> "Настройки"; "catalog" -> "Справочник"; "meals" -> "Приёмы пищи"; "medicines" -> "Приёмы лекарств"
     "stools" -> "Стул"; "health_entries" -> "Наблюдения состояния"; "water" -> "Вода"; "sleeps" -> "Сон"
-    "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
+    "tracking_targets" -> "Что отслеживать"; "day_status" -> "Полнота дня"; "meal_items" -> "Позиции еды"; "medicine_items" -> "Позиции лекарств"; else -> type
 }

@@ -74,7 +74,7 @@ internal object BackupSchema {
             "symptoms_complete" to ValueKind.BOOLEAN, "stool_summary" to ValueKind.OPTIONAL_TEXT) + times))
     }
     val versionThree = versionTwo.mapValues { (name, table) -> if (name == "catalog") table.copy(fields = table.fields + ("favorite" to ValueKind.BOOLEAN)) else table }
-    val tables = linkedMapOf<String, BackupTable>().apply {
+    val versionFour = linkedMapOf<String, BackupTable>().apply {
         versionThree.forEach { (name, schema) ->
             when (name) {
                 "feelings" -> put("health_entries", BackupTable(fields = event + times + actualTime + fields(
@@ -89,6 +89,11 @@ internal object BackupSchema {
                 else -> put(name, schema)
             }
         }
+    }
+    val tables = LinkedHashMap(versionFour).apply {
+        put("tracking_targets", BackupTable(fields = fields("user_id" to ValueKind.REFERENCE, "catalog_id" to ValueKind.REFERENCE,
+            "scope" to ValueKind.TEXT, "name_snapshot" to ValueKind.TEXT, "source_note" to ValueKind.OPTIONAL_TEXT, "comment" to ValueKind.OPTIONAL_TEXT,
+            "active" to ValueKind.BOOLEAN) + times))
     }
     fun upgradeThree(record: BackupRecord): BackupRecord = when (record.type) {
         "feelings" -> record.copy(type = "health_entries", values = (record.values - "description") + mapOf("metric" to "wellbeing", "value_code" to null,
@@ -126,7 +131,7 @@ internal object BackupSchema {
 
 object BackupCodec {
     const val APPLICATION_ID = "com.pamurlykin.nutritionassistant"
-    const val VERSION = 4
+    const val VERSION = 5
     const val MAX_BYTES = 16 * 1024 * 1024
     const val MAX_ITEMS = 100_000
 
@@ -149,10 +154,10 @@ object BackupCodec {
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString().removePrefix("\uFEFF")
             val root = JsonValues.readObject(text)
             require(root["applicationId"] == APPLICATION_ID) { "Это резервная копия другого приложения." }
-            require(root["schemaVersion"] in setOf(1L, 2L, 3L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
-            val expectedKeys = setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases") + if (root["schemaVersion"] == 4L) setOf("scales") else emptySet()
+            require(root["schemaVersion"] in setOf(1L, 2L, 3L, 4L, VERSION.toLong())) { "Версия JSON не поддерживается. Обновите приложение." }
+            val expectedKeys = setOf("applicationId", "schemaVersion", "appVersion", "exportedAt", "records", "aliases") + if ((root["schemaVersion"] as Long) >= 4L) setOf("scales") else emptySet()
             require(root.keys == expectedKeys) { "Неподдерживаемые поля JSON." }
-            if (root["schemaVersion"] == 4L) require(root["scales"] == HealthScales.dictionary()) { "Неизвестные определения шкал." }
+            if ((root["schemaVersion"] as Long) >= 4L) require(root["scales"] == HealthScales.dictionary()) { "Неизвестные определения шкал." }
             val records = root["records"].asList().map { value ->
                 val row = value.asObject()
                 require(row.keys == setOf("type", "publicId", "values")) { "Неверные поля записи." }
@@ -176,6 +181,7 @@ object BackupCodec {
                 validate(file, versionThree = true)
                 return BackupSchema.upgradeFile(file).also { validate(it) }
             }
+            if (root["schemaVersion"] == 4L) validate(file, versionFour = true)
             return file.also { validate(it) }
         } catch (failure: Exception) {
             // Never put imported text or parser diagnostics containing user data into UI/logs.
@@ -209,14 +215,14 @@ object BackupCodec {
     private fun Any?.asList(): List<*> = this as? List<*> ?: error("Expected array")
 
     @Suppress("UNCHECKED_CAST")
-    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false, versionThree: Boolean = false) {
+    fun validate(file: BackupFile, legacy: Boolean = false, versionTwo: Boolean = false, versionThree: Boolean = false, versionFour: Boolean = false) {
         require(file.appVersion.isNotBlank() && file.appVersion.length <= 100)
         Instant.parse(file.exportedAt)
         val modern = !legacy && !versionTwo && !versionThree
         val byId = file.records.associateBy { it.publicId }
         require(byId.size == file.records.size && file.records.size <= MAX_ITEMS)
         require(file.records.count { it.type == "users" } == 1)
-        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else if (versionThree) BackupSchema.versionThree else BackupSchema.tables
+        val tables = if (legacy) BackupSchema.versionOne else if (versionTwo) BackupSchema.versionTwo else if (versionThree) BackupSchema.versionThree else if (versionFour) BackupSchema.versionFour else BackupSchema.tables
         var itemCount = file.records.size.toLong() + file.aliases.size
         val dailyKeys = hashSetOf<List<Any?>>()
         val positions = hashSetOf<List<Any?>>()
@@ -256,6 +262,14 @@ object BackupCodec {
                 if (key in setOf("dosage", "comment")) require(value == null || (value as String).length <= 1000 || record.type == "health_entries")
             }
             val v = record.values
+            if (record.type == "tracking_targets") {
+                require(v["scope"] in setOf("entry", "ingredient"))
+                val kind = byId[v["catalog_id"]]?.values?.get("kind")
+                require(kind in setOf("dish", "product") && (v["scope"] != "ingredient" || kind == "product"))
+                require((v["name_snapshot"] as String).isNotBlank() && (v["name_snapshot"] as String).length <= 3006)
+                require((v["source_note"] as String?)?.length?.let { it <= 1000 } != false)
+                require(dailyKeys.add(listOf(record.type, v["user_id"], v["catalog_id"], v["scope"])))
+            }
             if (record.type == "catalog") {
                 val kind = v["kind"] as String
                 require(kind in setOf("product", "dish", "medicine"))

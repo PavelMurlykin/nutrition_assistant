@@ -30,7 +30,7 @@ The app opens «Календарь» (Calendar) with today's diary. The bottom t
 
 ## Consistent interface and forms
 
-In version 0.10.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+In version 0.11.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
 
 The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
 
@@ -83,13 +83,23 @@ Tap «Добавить прием» (Add intake) and search by part of a medicin
 
 In «Туалет» (Toilet), select Bristol stool type 1–7. Types 1–2 are labeled constipation signs, 6–7 loose stool/diarrhea, 3–4 formed stool, and 5 soft stool. These are diary categories rather than diagnoses. Urgency 0–2, pain 0–3, actual time, and a comment are optional; auxiliary scales have a Missing choice. Existing type-0 entries remain unassessed; new type-0 entries are not allowed.
 
-After saving type 1–2 or 6–7, «Аналитика стула» (Stool analysis) updates automatically. It shows food from the previous calendar day relative to the event date, including snacks. For an October 18 record, this means October 17, rather than a rolling 24-hour window.
+### Explainable analysis
 
-The algorithm compares dishes, products, food types, and known ingredients. An individually logged product also counts as an ingredient when compared with dish compositions. Each factor shows days with the selected condition / all observed days following exposure, and the corresponding counts without exposure. Multiple stools or repeated ingredients on one day do not multiply day counts. Constipation and diarrhea are analyzed separately. Only history through the selected date is used.
+In Stool analysis, choose 30, 90, or 365 days (90 by default). The period ends on the day before the selected date: the selected day and its episode are examined separately. Coverage shows confirmed previous-day food, confirmed symptoms and eligible pairs, type-6–7 days and episodes, items with partial/unknown composition, events without clock times, and unsuitable night ratings. Having records does not itself establish completeness.
 
-Comparisons include only days with assessed stool records and food recorded on the preceding day. Missing records are never assumed healthy or symptom-free. A “repeated association” requires at least two affected days after exposure, at least two observed days without exposure, and a higher condition rate with exposure. Up to 12 factors are displayed, prioritizing repeated associations and then rate differences. Insufficient data is stated explicitly.
+Factor observations opens meals/products as intake entries, nested ingredients, medication/doses, daily ratings, and sleep. Search, groups, categories, and Only tracked filters are available. Categories provide navigation and a presence summary in eligible days; they do not establish shared tolerability. The list is alphabetical, without a risk ranking.
 
-An association does not establish a cause. “Without exposure” means the factor was not recorded on the preceding day; results depend on diary completeness. Medication, infections, water, sleep, and wellbeing effects are not modeled. The algorithm gives no diagnoses, treatment advice, or recommendations to eliminate foods.
+Each observation shows days with and without the factor, loose-stool days in each group, and excluded days. Confirmed previous-day food and an explicit symptom outcome are required; medication also needs confirmed previous-day observations. Ingredient absence is counted only when composition is fully known; recorded presence remains usable in partial composition. Legacy flat composition is labeled separately, recipes and variants come from historical snapshots, and recipe revisions stay separate.
+
+At least three eligible days per group are required. A Repeated coincidence additionally needs at least two affected days with the factor and a higher frequency. Multiple episodes on one day count as one day rather than independent confirmations. This is the app's fixed descriptive rule version 1, with no claimed statistical or medical validation. Small groups say Insufficient data; a frequency that is not higher does not prove tolerability.
+
+Known individual portions and literal doses have separate comparisons. They are not added across the day; units and differently written doses are not converted. Unknown portions/doses are not treated as different portions/doses. Daily ratings belong to the outcome day and establish no order relative to an episode. Missing ratings and unknown illness never mean absent signs. A new sleep rating without times belongs to the explicitly selected night; legacy clock times without clarified dates do not automatically establish an eligible night.
+
+Factors present on the same eligible days are flagged as inseparable in current data; up to eight names and the full count are shown. Recorded illness signs, days with an unknown illness assessment, and differences in recorded medication are shown separately. A moment without signs does not confirm their absence for the whole day. Different diary records do not imply a changed prescription. Choose a source day to inspect historical names, composition paths, portions, doses, comments, and open its diary. Calculation rules and limitations explains denominators and unknowns. Comments are displayed without semantic interpretation.
+
+For the selected day, choose a type-6–7 episode and a 0–6, 6–24, or 24–48-hour window. Before episode and calendar context shows events preceding it by recorded time and UTC offset. The lower bound is excluded and the upper included: exactly 6 hours belongs to 0–6, exactly 24 to 6–24. Equal and later times are excluded. Across timezone changes, the original local diary date is retained while absolute times are compared. Without the episode's clock time, hourly predecessors are not computed. Untimed entries and calendar context from previous-day food/medication and day/night ratings appear separately without claiming precise order. These windows are exploratory assumptions, not universal reaction times.
+
+What I want to track saves a product/dish as an intake entry, or a product as an ingredient. The assumption source and comment are optional; selection does not confirm intolerance. History shows mentions in recorded compositions through the selected date. Stop tracking retains notes and history; tracking can be restored. Reselecting uses the existing identity and blank fields retain its notes; use Edit to clear them. The profile travels in JSON with the diary.
 
 ### Daily state and separate observations
 
@@ -111,7 +121,7 @@ These are the diary's own version-1 self-report scales with no claimed medical v
 
 Food, medication, stool, and moment observations offer «Указать фактическое время» (Specify actual time). It remains unknown until explicitly selected and is never inferred from creation time. Check the UTC offset and optional IANA timezone, such as Europe/Moscow. Repeated daylight-saving times need an explicit offset choice; nonexistent local times cannot be saved. Time unknown clears the time and zone. Whole-day ratings have no precise clock time.
 
-Check day completeness independently confirms all food and all observations/symptoms. Symptoms require an explicit outcome: no loose stool; type 6–7 occurred (record the episode first); or no stool. It is checked against recorded stools. No loose stool is the user's own report, not a diagnosis. An empty day is never automatically confirmed. Food changes clear food confirmation; stool, health, sleep, or medication changes clear symptom confirmation. Confirm again after editing. Current analysis does not yet use these new scales, times, or confirmations; that extension is scheduled separately.
+Check day completeness independently confirms all food and all observations/symptoms. Symptoms require an explicit outcome: no loose stool; type 6–7 occurred (record the episode first); or no stool. It is checked against recorded stools. No loose stool is the user's own report, not a diagnosis. An empty day is never automatically confirmed. Food changes clear food confirmation; stool, health, sleep, or medication changes clear symptom confirmation. Confirm again after editing. Analysis uses confirmations and structured ratings under the rules above.
 
 ### Sleep and water
 
@@ -149,7 +159,7 @@ Ordinary catalog or event-comment edits preserve logged food composition. Update
 
 Actual-time, scale, and completeness forms are available as described above.
 
-Export creates JSON 4; import reads JSON 1–4. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
+Export creates JSON 5; import reads JSON 1–5. Composition is limited to 16 levels and 10,000 expanded nodes per meal. Legacy flat ingredients and unknown values receive no invented sources or quantities.
 
 ## Reminders and permission
 
@@ -175,7 +185,7 @@ No additional storage permission is needed. A copy outside the local database ca
 
 ### Import
 
-1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, 3, or 4 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
+1. Tap «Импорт из JSON» (Import JSON) and select a Nutrition Assistant JSON 1, 2, 3, 4, or 5 backup in UTF-8, up to 16 MiB and 100,000 objects and components. Other apps' backups are not accepted.
 2. Review «Проверка импорта» (Import preview): object counts, additions, matches, and conflicts. History merges into the current personal diary; the database is not cleared.
 3. Explicitly approve matching same-name catalog entries with different UUIDs. Current local metadata, composition, favorites, and archive state remain by default. «Восстановить состав и архив справочника из файла» (Restore catalog composition and archive from file) replaces current matched product, dish, and medication details with the backup's values; historical meal and medication snapshots are unchanged. Enable this option for full restoration on a new installation. Transfer matching also includes basic product/variant, brand, and variant label. If this combination is ambiguous in either catalog, entries remain separate without name-based merging.
 4. For differing data, confirm keeping local records. A conflicting intake keeps all its local items; the file does not overwrite it. Existing water, sleep, and day-completeness records on the same date also remain; importing new observations invalidates the corresponding previous confirmation. Long lists show the first 100 details of each kind and the total count.
@@ -190,7 +200,7 @@ The preview and prepared backup survive screen recreation within the current pro
 
 ## Updating an existing installation
 
-Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 → 7 preserve events and reminder settings. Schema 7 moves old state text into comments without guessing scores, makes sleep times optional, and adds scales with versions. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
+Install an update over the previous app using the same signing key. Room migrations 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 preserve events and reminder settings. Schema 8 adds tracked factors without changing history. Schema 7 moves old state text into comments without guessing scores, makes sleep times optional, and adds scales with versions. Schema 6 adds favorites while preserving identity and history. Schema 5 adds nested composition, extra metadata, and snapshots; legacy values remain unknown and no day confirmations are fabricated. Schema 4 adds stable UUIDs and persistent import matches while retaining local numeric IDs and snapshots. Schema 3 moves former store-bought catalog entries into Products while retaining IDs and diary links. Logged store-bought items are relabeled as products; their names and known compositions are preserved. The store-bought category value is removed from current database records.
 
 Former free-text dish ingredients become linked product entries; equal normalized names are deduplicated. Historical diary compositions stay unchanged. Schema-1 free-text food descriptions remain whole dishes marked “Type unspecified (legacy record),” without guessed ingredients. Old medication doses and sleep entries are preserved.
 

@@ -22,8 +22,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Поиск продуктов").performScrollTo().performTextInput("ВОД")
         compose.onNodeWithText("Вода").performClick()
         compose.onNodeWithText("Молоко").assertDoesNotExist()
-        compose.onNodeWithText("Поиск продуктов").performTextClearance()
-        compose.onNodeWithText("Поиск продуктов").performTextInput("МОЛ")
+        compose.onNodeWithText("Поиск продуктов").performScrollTo().performTextReplacement("МОЛ")
         compose.onNodeWithText("Молоко").performClick()
         compose.onNodeWithText("Состав блюда · выбрано продуктов: 2").assertExists()
         compose.onNodeWithText("Сохранить").performClick()
@@ -52,6 +51,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Добавить запись").performClick()
         compose.onNodeWithText("Название").performTextInput(productName)
         compose.onNodeWithText("Сохранить").performClick()
+        compose.waitUntil(15_000) { compose.onAllNodesWithText("Название").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Записей нет. Добавьте первую запись.").fetchSemanticsNodes().isEmpty() }
@@ -65,12 +65,12 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Сохранить").assertIsNotEnabled()
         compose.onNodeWithText("Поиск продуктов").performScrollTo().performTextInput(suffix)
         compose.onNodeWithText(productName).performClick()
-        compose.onNodeWithText("Поиск продуктов").performTextClearance()
-        compose.onNodeWithText("Поиск продуктов").performTextInput("ВОД")
+        compose.onNodeWithText("Поиск продуктов").performScrollTo().performTextReplacement("ВОД")
         compose.onNodeWithText("Вода").performClick()
         compose.onNodeWithText("Состав блюда · выбрано продуктов: 2").assertExists()
         capture("dish-products-editor")
         compose.onNodeWithText("Сохранить").performClick()
+        compose.waitUntil(15_000) { compose.onAllNodesWithText("Название").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Записей нет. Добавьте первую запись.").fetchSemanticsNodes().isEmpty() }
@@ -106,6 +106,7 @@ class CatalogWorkflowTest {
         compose.onNodeWithText("Сохранить").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Состав блюда · выбрано продуктов: 2").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Сохранить").performClick()
+        compose.waitUntil(15_000) { compose.onAllNodesWithText("Название").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("catalog-list").performScrollToIndex(0)
         compose.onNodeWithText("Продукты").performClick()
         compose.onNodeWithText("Поиск по части названия").performTextInput(suffix)

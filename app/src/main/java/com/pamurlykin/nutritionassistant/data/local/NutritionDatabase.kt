@@ -26,8 +26,9 @@ import com.pamurlykin.nutritionassistant.data.model.normalizeName
         BackupAliasEntity::class,
         ProductComponentEntity::class,
         DayStatusEntity::class,
+        TrackingTargetEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(IngredientConverters::class)
@@ -42,8 +43,17 @@ abstract class NutritionDatabase : RoomDatabase() {
     abstract fun sleepDao(): SleepDao
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun dayStatusDao(): DayStatusDao
+    abstract fun analyticsDao(): AnalyticsDao
 
     companion object {
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE tracking_targets (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, catalog_id INTEGER NOT NULL, scope TEXT NOT NULL, name_snapshot TEXT NOT NULL, source_note TEXT, comment TEXT, active INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL, FOREIGN KEY(catalog_id) REFERENCES catalog(id) ON UPDATE NO ACTION ON DELETE NO ACTION)")
+                db.execSQL("CREATE INDEX index_tracking_targets_catalog_id ON tracking_targets (catalog_id)")
+                db.execSQL("CREATE UNIQUE INDEX index_tracking_targets_public_id ON tracking_targets (public_id)")
+                db.execSQL("CREATE UNIQUE INDEX index_tracking_targets_user_id_catalog_id_scope ON tracking_targets (user_id,catalog_id,scope)")
+            }
+        }
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE health_entries (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, date TEXT NOT NULL, metric TEXT NOT NULL, value_code TEXT, value_label TEXT, scale_version INTEGER, period TEXT NOT NULL, day_slot INTEGER, duration_minutes INTEGER, activity_kind TEXT, illness_impact TEXT, symptom_codes TEXT NOT NULL, comment TEXT, actual_time TEXT, utc_offset TEXT, time_zone TEXT, time_precision TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, public_id TEXT NOT NULL)")
@@ -156,6 +166,6 @@ abstract class NutritionDatabase : RoomDatabase() {
                 context,
                 NutritionDatabase::class.java,
                 "nutrition_assistant.db",
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build()
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build()
     }
 }

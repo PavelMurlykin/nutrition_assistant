@@ -29,9 +29,13 @@ class FoodWorkflowTest {
         menu(); compose.onNodeWithText("Продукты").performClick()
         compose.onNodeWithText("Добавить запись").performClick()
         compose.onNodeWithText("Название").performTextInput(name)
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitForIdle()
         compose.onNodeWithText("Категория: Прочее").performScrollTo().performClick()
         compose.onNodeWithText("Мука и хлеб").performScrollTo().performClick()
         compose.onNodeWithText("Конкретный товар").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Марка (необязательно)").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Конкретный товар").assertIsSelected()
         compose.onNodeWithText("Марка (необязательно)").performScrollTo().performTextInput("Марка UI")
         compose.onNodeWithText("Уточнение варианта").performScrollTo().performTextInput("С чесноком")
         compose.onNodeWithText("Уточнить состав продукта").performScrollTo().performClick()

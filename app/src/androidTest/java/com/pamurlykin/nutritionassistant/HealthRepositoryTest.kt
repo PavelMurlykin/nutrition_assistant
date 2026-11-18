@@ -83,7 +83,7 @@ class HealthRepositoryTest {
         repo.health.saveDay(1,day,values(),3,"Сон")
         repo.health.save(1,day,null,HealthDraft("illness","present","moment",illnessImpact="moderate",symptomCodes=listOf("fever","digestive"),context=EventContext(RecordedTime("09:05","+03:00"),"Недомогание")))
         repo.addStool(1,day,6,EventContext(comment="Тест"),StoolDetails(2,1));repo.confirmDay(1,day,true,true,"diarrhea")
-        val bytes=BackupStore(db,"test").export();val json=JSONObject(bytes.toString(Charsets.UTF_8));assertEquals(4,json.getInt("schemaVersion"));assertTrue(json.has("scales"))
+        val bytes=BackupStore(db,"test").export();val json=JSONObject(bytes.toString(Charsets.UTF_8));assertEquals(5,json.getInt("schemaVersion"));assertTrue(json.has("scales"))
         val target=database()
         try {
             val targetRepo=NutritionRepository(target);targetRepo.initialize();val store=BackupStore(target,"test");val file=BackupCodec.decode(bytes)
@@ -135,7 +135,7 @@ class HealthRepositoryTest {
     }
     @Test fun documentedFormatsOneThroughFourAreDecodedByProductionParser()=runBlocking {
         val assets=InstrumentationRegistry.getInstrumentation().context.assets
-        (1..4).forEach { version ->
+        (1..5).forEach { version ->
             val file=assets.open("nutrition-backup-v$version.json").use(BackupCodec::read)
             BackupCodec.validate(file);assertEquals(file.records.size,BackupCodec.decode(BackupCodec.encode(file)).records.size)
         }

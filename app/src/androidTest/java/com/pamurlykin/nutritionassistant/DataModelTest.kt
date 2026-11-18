@@ -127,7 +127,7 @@ class DataModelTest {
         repository.confirmDay(1, day, true, true, "no_diarrhea")
         repository.archiveCatalogEntry(garlic.id)
         val bytes = hash().export()
-        assertEquals(4, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
+        assertEquals(5, JSONObject(bytes.toString(Charsets.UTF_8)).getInt("schemaVersion"))
         val target = newDatabase()
         try {
             val targetRepo = NutritionRepository(target); targetRepo.initialize()

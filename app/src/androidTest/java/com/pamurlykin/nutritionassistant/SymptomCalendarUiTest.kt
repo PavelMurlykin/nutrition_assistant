@@ -101,6 +101,7 @@ class SymptomCalendarUiTest {
         compose.onNodeWithTag("calendar-day-$day").performScrollTo().performClick()
         val snapshot=runBlocking { repo.observeDailyStats(1,day.toString()).first() }
         val meal=snapshot.meals.single().event.id;val med=snapshot.medicines.single().event.id;val stool=snapshot.stools.single { it.quality==6 }.id
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("timeline-meal-$meal").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("timeline-meal-$meal").performScrollTo().assertExists()
         compose.onNodeWithTag("timeline-stool-$stool").performScrollTo().assertExists()
         compose.onNodeWithTag("timeline-medicine-$med").performScrollTo().assertExists()
