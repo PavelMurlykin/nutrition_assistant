@@ -26,6 +26,18 @@ data class AnalyticsRows(@Embedded val user: UserEntity,
 @Dao
 interface AnalyticsDao {
     @Transaction @Query("SELECT * FROM users WHERE user_id = :userId") fun observe(userId: Long): Flow<AnalyticsRows?>
+    @Transaction @Query("SELECT * FROM meals WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun mealsInRange(userId: Long, start: String, end: String): List<MealWithItems>
+    @Transaction @Query("SELECT * FROM medicines WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun medicinesInRange(userId: Long, start: String, end: String): List<MedicineWithItems>
+    @Query("SELECT * FROM stools WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun stoolsInRange(userId: Long, start: String, end: String): List<StoolEntity>
+    @Query("SELECT * FROM health_entries WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun healthInRange(userId: Long, start: String, end: String): List<HealthEntryEntity>
+    @Query("SELECT * FROM sleeps WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun sleepsInRange(userId: Long, start: String, end: String): List<SleepEntity>
+    @Query("SELECT * FROM day_status WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun statusesInRange(userId: Long, start: String, end: String): List<DayStatusEntity>
     @Query("SELECT * FROM tracking_targets WHERE id = :id") suspend fun get(id: Long): TrackingTargetEntity?
     @Query("SELECT * FROM tracking_targets WHERE user_id = :userId AND catalog_id = :catalogId AND scope = :scope") suspend fun find(userId: Long, catalogId: Long, scope: String): TrackingTargetEntity?
     @Insert suspend fun insert(value: TrackingTargetEntity): Long

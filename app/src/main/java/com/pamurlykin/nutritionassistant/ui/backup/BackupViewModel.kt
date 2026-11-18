@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pamurlykin.nutritionassistant.AppContainer
 import com.pamurlykin.nutritionassistant.data.backup.*
+import com.pamurlykin.nutritionassistant.data.export.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,53 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { message.value = "Не удалось выполнить операцию. Проверьте файл и доступное место. Существующие записи не очищались." }
             finally { busy.value = false }
+        }
+    }
+
+    internal val diaryPrepared = MutableStateFlow<PreparedDiaryExport?>(null)
+    internal val diaryError = MutableStateFlow<String?>(null)
+    internal val diarySaved = MutableStateFlow(false)
+
+    internal fun prepareDiary(options: DiaryExportOptions, format: DiaryExportFormat) {
+        diaryError.value = null
+        run {
+            try {
+                val (history, water) = container.repository.analytics.readExportData(options)
+                val prepared = withContext(Dispatchers.Default) {
+                    val data = DiaryExportBuilder.build(history, water, options)
+                    val bytes = DiaryExportWriter.encode(data, format) ?: return@withContext null
+                    val eventCounts = data.events.groupingBy { it.section }.eachCount()
+                    val counts = DiarySection.entries
+                        .filter { it in options.sections && it != DiarySection.COMPOSITION && it != DiarySection.ANALYSIS }
+                        .associateWith { eventCounts[it] ?: 0 }
+                    PreparedDiaryExport(options, counts, format, bytes)
+                }
+                if (prepared == null) diaryError.value = "Файл больше 16 МиБ. Сократите период или число разделов."
+                else diaryPrepared.value = prepared
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { diaryError.value = "Не удалось подготовить пакет. Попробуйте сократить период." }
+        }
+    }
+
+    internal fun clearDiary() {
+        diaryPrepared.value = null
+        diaryError.value = null
+        diarySaved.value = false
+    }
+
+    internal fun saveDiary(resolver: ContentResolver, uri: Uri?) {
+        if (uri == null) { diaryError.value = "Сохранение отменено."; return }
+        val file = diaryPrepared.value
+        if (file == null) { diaryError.value = "Подготовьте пакет заново."; return }
+        diaryError.value = null
+        run {
+            try {
+                requireNotNull(resolver.openOutputStream(uri, "wt")).use { it.write(file.bytes) }
+                diarySaved.value = true
+                diaryPrepared.value = null
+                message.value = "Пакет для анализа сохранён."
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { diaryError.value = "Не удалось записать весь файл. Выберите место для новой копии." }
         }
     }
 

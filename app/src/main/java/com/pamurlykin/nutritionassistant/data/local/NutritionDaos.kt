@@ -124,6 +124,9 @@ interface FeelingDao {
 
 @Dao
 interface WaterDao {
+    @Query("SELECT * FROM water WHERE user_id = :userId AND date BETWEEN :start AND :end")
+    suspend fun getInRange(userId: Long, start: String, end: String): List<WaterEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(water: WaterEntity): Long
 

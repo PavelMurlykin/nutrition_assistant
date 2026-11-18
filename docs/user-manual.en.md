@@ -30,7 +30,7 @@ The app opens «Календарь» (Calendar) with today's diary. The bottom t
 
 ## Consistent interface and forms
 
-In version 0.11.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
+In version 0.12.0, screens, editors, date/time input, confirmations, errors, and import preview share fonts, fields, spacing, and buttons. Light and dark themes follow Android settings. Text follows the system font size; long forms and lists scroll, and actions wrap when space is limited. In a short window with the keyboard open, scroll the entire form if needed to reach its actions.
 
 The open editor, entered text, selected food items, and doses survive screen recreation, such as device rotation. They become diary records only after saving. When record values have changed, Cancel, Back, or tapping outside the window offers «Отбросить» (Discard); canceling that confirmation returns to the draft. Products and other catalog entries already saved through a nested editor remain in the catalog when the parent form is canceled.
 
@@ -170,6 +170,16 @@ The app's only permission is POST_NOTIFICATIONS. On Android 13+, «Разреш�
 Sleep, wellbeing, snacks, medication, and water are entered manually without reminders. Tapping a notification opens the diary. Each reminder type is sent at most once per local calendar day.
 
 Android may delay inexact reminders to save battery. Reopen the app after rebooting or force-stopping it to restore reminders. Automatic boot restoration and exact alarms would need additional permissions, so they are not used. Time and timezone changes recalculate the schedule.
+
+## Export for external analysis
+
+1. Open «Данные» (Data) → «Настроить выгрузку» (Configure export). Choose inclusive start and end dates covering 1 to 365 days. The default is the last 30 calendar days including today.
+2. Select food, historical composition, medications, stool, daily ratings and observations, sleep, water, completeness, and analytics as needed. Historical composition requires Food. Analytics requires Food, Stool, and Diary completeness. Analysis uses only records in the file, so the first day can only supply prior-day evidence for the following day.
+3. Optionally include comments or enable «Скрыть свободные названия и источники» (Hide free-text names and sources). Comments are off and names are preserved by default. Hiding replaces food, dish, component, and medication names with labels and omits brands, variants, composition sources, and literal doses. Structured quantities and units are preserved. Names or stores can remain in included comments or the request. Dates and event IDs remain, so the export does not guarantee anonymity.
+4. Choose JSON for processing or Markdown for reading. Edit the request for an external model if needed (up to 4000 characters). A blank request is omitted. Comments are stored apart from the request as diary evidence.
+5. Tap «Подготовить пакет» (Prepare package). Check the dates, size, and record counts by section. «Сохранить файл» (Save file) opens the system location picker. After cancelling the picker, you can retry or change the selection. For a file larger than 16 MiB, shorten the period or select fewer sections. If writing was interrupted, prepare a new copy.
+
+The file includes the original local dates, time precision, recorded offset and time zone, dictionaries, and event identifiers. Historical ingredients come from saved meals. Unknown times and composition stay unknown. Export is generated on the device. Before providing the saved file to an external service, inspect it and decide what to disclose. The package is for reading and analysis. Use a backup to restore the diary.
 
 ## Data: JSON backup
 

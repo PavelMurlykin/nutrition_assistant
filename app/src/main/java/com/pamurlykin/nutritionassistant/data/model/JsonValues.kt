@@ -5,6 +5,7 @@ import android.util.JsonToken
 import android.util.JsonWriter
 import java.io.StringReader
 import java.io.StringWriter
+import java.io.Writer
 
 /** Strict shared JSON reader for backups and immutable composition snapshots. */
 object JsonValues {
@@ -15,7 +16,14 @@ object JsonValues {
         require(reader.peek() == JsonToken.END_DOCUMENT)
         value
     }
-    fun stringify(value: Any?): String = StringWriter().also { output -> JsonWriter(output).use { write(it, value) } }.toString()
+    fun stringify(value: Any?): String = StringWriter().also { writeTo(it, value) }.toString()
+
+    fun writeTo(output: Writer, value: Any?, pretty: Boolean = false) {
+        JsonWriter(output).use { writer ->
+            if (pretty) writer.setIndent("  ")
+            write(writer, value)
+        }
+    }
     private fun read(reader: JsonReader, depth: Int): Any? {
         require(depth <= 64) { "JSON is too deep" }
         return when (reader.peek()) {

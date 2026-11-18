@@ -27,6 +27,16 @@ fun BackupScreen(viewModel: BackupViewModel) {
     val message by viewModel.message.collectAsStateWithLifecycle()
     val preview by viewModel.preview.collectAsStateWithLifecycle()
     val prepared by viewModel.preparedExport.collectAsStateWithLifecycle()
+    val diaryPrepared by viewModel.diaryPrepared.collectAsStateWithLifecycle()
+    val diaryError by viewModel.diaryError.collectAsStateWithLifecycle()
+    val diarySaved by viewModel.diarySaved.collectAsStateWithLifecycle()
+    var showDiary by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(diarySaved) {
+        if (diarySaved) {
+            showDiary = false
+            viewModel.clearDiary()
+        }
+    }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { viewModel.saveExport(context.contentResolver, it) }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { viewModel.openImport(context.contentResolver, it) }
     LaunchedEffect(prepared, busy) {
@@ -44,10 +54,17 @@ fun BackupScreen(viewModel: BackupViewModel) {
             Button(enabled = !busy && preview == null, onClick = viewModel::prepareExport, modifier = Modifier.testTag("export-backup")) { Text("Экспорт резервной копии") }
             OutlinedButton(enabled = !busy && preview == null, onClick = { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, modifier = Modifier.testTag("import-backup")) { Text("Импорт из JSON") }
         } }
+        item { DiaryExportCard(!busy && preview == null) { showDiary = true } }
         if (busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Выполняется операция…") }
         if (message != null) item { Text(message.orEmpty(), modifier = Modifier.testTag("backup-message")) }
         item { Text("Импорт сначала показывает проверку. До нажатия «Применить импорт» дневник не меняется. Существующая база не очищается. Экспорт JSON 5, импорт JSON 1–5; лимит 16 МиБ и 100 000 объектов и компонентов.") }
         item { Text("После закрытия процесса выберите файл заново. Прерванный экспорт может оставить неполный файл: сохраните новую копию и проверьте её импортом.") }
+    }
+    if (showDiary && !diarySaved) {
+        DiaryExportDialogs(diaryPrepared, busy, diaryError, viewModel::prepareDiary, viewModel::clearDiary, viewModel::saveDiary) {
+            viewModel.clearDiary()
+            showDiary = false
+        }
     }
     preview?.let { selected ->
         ImportPreviewDialog(selected, busy, viewModel::cancelPreview, viewModel::applyImport)

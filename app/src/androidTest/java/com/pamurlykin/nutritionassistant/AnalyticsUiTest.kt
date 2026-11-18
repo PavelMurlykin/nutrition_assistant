@@ -91,10 +91,12 @@ class AnalyticsUiTest {
         compose.onNode(hasText("Чеснок аналитики") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role,androidx.compose.ui.semantics.Role.Button)).performScrollTo().performClick()
         compose.onNodeWithText("Источник предположения (необязательно)").performScrollTo().performTextInput("Собственное наблюдение")
         compose.onNodeWithText("Комментарий (необязательно)").performScrollTo().performTextInput("Проверить историю")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitForIdle()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Источник предположения (необязательно)").performScrollTo().assertTextContains("Собственное наблюдение")
         capture("analysis-target-editor-restored")
-        visible(compose.onNodeWithText("Сохранить предположение")).performClick()
+        visible(compose.onNodeWithText("Сохранить предположение")).assertIsEnabled().performClick()
         compose.waitUntil(10_000) {runBlocking {repo.observeAnalyticsHistory().first().targets.size==1}}
         val target=runBlocking {repo.observeAnalyticsHistory().first().targets.single().target}
         assertEquals("ingredient",target.scope);assertEquals("Собственное наблюдение",target.sourceNote);assertEquals("Проверить историю",target.comment)

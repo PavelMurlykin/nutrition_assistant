@@ -99,11 +99,12 @@ object ExplainableAnalyzer {
         (row.bedTime==null && row.wakeupTime==null || row.bedDate!=null && row.wakeupDate==row.date)
     private fun medicationSignature(rows: List<MedicineWithItems>)=rows.flatMap { it.items }.map { listOf(it.catalogId.toString(),it.name,it.dosage,it.quantity,it.unit) }.sortedBy { JsonValues.stringify(it) }
 
-    fun analyze(history: AnalysisHistory, selectedDate: String, days: Int=90): ExplainableReport {
+    fun analyze(history: AnalysisHistory, selectedDate: String, days: Int=90, includeSelectedDay: Boolean = false): ExplainableReport {
         val selected=validateDay(selectedDate); require(days in 1..365)
-        // The selected day's individual episode is examined separately; daily comparisons use completed prior dates.
-        val availableDays=minOf(days.toLong(),java.time.temporal.ChronoUnit.DAYS.between(firstDate,selected)).toInt()
-        val end=selected.minusDays(1);val start=selected.minusDays(availableDays.toLong()); val earliest=start.minusDays(2).toString()
+        // The interactive report excludes the selected day. Exports use a closed, user-selected range.
+        val afterEnd = if (includeSelectedDay) selected.plusDays(1) else selected
+        val availableDays=minOf(days.toLong(),java.time.temporal.ChronoUnit.DAYS.between(firstDate,afterEnd)).toInt()
+        val end=afterEnd.minusDays(1);val start=afterEnd.minusDays(availableDays.toLong()); val earliest=start.minusDays(2).toString()
         val meals=history.meals.filter { it.event.date in earliest..end.toString() }.groupBy { it.event.date }
         val meds=history.medicines.filter { it.event.date in earliest..end.toString() }.groupBy { it.event.date }
         val stools=history.stools.filter { it.date in start.toString()..end.toString() }.groupBy { it.date }

@@ -1,15 +1,36 @@
 package com.pamurlykin.nutritionassistant.data.repository
 
 import androidx.room.withTransaction
+import com.pamurlykin.nutritionassistant.data.export.DiaryExportOptions
+import com.pamurlykin.nutritionassistant.data.export.DiarySection
 import com.pamurlykin.nutritionassistant.data.local.*
 import com.pamurlykin.nutritionassistant.data.model.*
 import com.pamurlykin.nutritionassistant.util.StorageFormats
 import kotlinx.coroutines.flow.*
 
 class AnalyticsRepository(private val db: NutritionDatabase) {
-    fun observe(userId: Long) = db.analyticsDao().observe(userId).filterNotNull().map { rows ->
-        AnalysisHistory(rows.meals, rows.medicines, rows.stools, rows.health, rows.sleeps, rows.statuses, rows.targets)
+    fun observe(userId: Long) = db.analyticsDao().observe(userId).filterNotNull().map { it.toHistory() }
+
+    suspend fun readExportData(options: DiaryExportOptions) = db.withTransaction {
+        val userId = LocalUserDefaults.USER_ID
+        val start = options.start.toString()
+        val end = options.end.toString()
+        val selected = options.sections
+        val dao = db.analyticsDao()
+        val history = AnalysisHistory(
+            meals = if (DiarySection.FOOD in selected) dao.mealsInRange(userId, start, end) else emptyList(),
+            medicines = if (DiarySection.MEDICINE in selected) dao.medicinesInRange(userId, start, end) else emptyList(),
+            stools = if (DiarySection.STOOL in selected) dao.stoolsInRange(userId, start, end) else emptyList(),
+            health = if (DiarySection.HEALTH in selected) dao.healthInRange(userId, start, end) else emptyList(),
+            sleeps = if (DiarySection.SLEEP in selected) dao.sleepsInRange(userId, start, end) else emptyList(),
+            statuses = if (DiarySection.COMPLETENESS in selected) dao.statusesInRange(userId, start, end) else emptyList(),
+        )
+        val water = if (DiarySection.WATER in selected) db.waterDao().getInRange(userId, start, end) else emptyList()
+        history to water
     }
+
+    private fun AnalyticsRows.toHistory() = AnalysisHistory(meals, medicines, stools, health, sleeps, statuses, targets)
+
     suspend fun saveTarget(userId: Long, id: Long?, catalogId: Long, scope: String, source: String?, comment: String?, active: Boolean = true) = db.withTransaction {
         val entry = requireNotNull(db.catalogDao().get(catalogId))
         require(entry.kind in setOf("dish", "product") && scope in setOf("entry", "ingredient"))
